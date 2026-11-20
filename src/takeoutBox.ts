@@ -27,7 +27,7 @@ export function createTakeoutBox() {
   const print=document.createElement('canvas');print.width=1024;print.height=768;
   const pc=print.getContext('2d')!;pc.fillStyle='#242321';pc.fillRect(0,0,1024,768);
   for(let i=0;i<30000;i++){seed=(seed*16807)%2147483647;const x=seed%1024;seed=(seed*16807)%2147483647;const y=seed%768;pc.fillStyle=i%2?'rgba(255,250,232,.025)':'rgba(0,0,0,.04)';pc.fillRect(x,y,1,2);}
-  pc.save();pc.translate(512,370);pc.textAlign='center';pc.fillStyle='#d0bca0';pc.font='bold 98px Georgia';pc.fillText('kōri',0,0);pc.font='15px sans-serif';pc.fillStyle='#b4a48d';pc.fillText('P E Q U E N O S  R I T U A I S .',0,56);pc.fillText('G R A N D E S  S A B O R E S .',0,84);pc.restore();
+  pc.save();pc.translate(512,370);pc.textAlign='center';pc.fillStyle='#d0bca0';pc.font='bold 76px Georgia';pc.fillText('ayorume',0,0);pc.font='15px sans-serif';pc.fillStyle='#b4a48d';pc.fillText('P E Q U E N O S  R I T U A I S .',0,56);pc.fillText('G R A N D E S  S A B O R E S .',0,84);pc.restore();
   const printMap=new THREE.CanvasTexture(print);printMap.colorSpace=THREE.SRGBColorSpace;
   const printed=new THREE.MeshStandardMaterial({map:printMap,roughness:.93});
   const cover = document.createElement('canvas');
@@ -38,8 +38,8 @@ export function createTakeoutBox() {
   ink.fillStyle = '#a23c29';
   ink.fillRect(800, 0, 18, cover.height);
   ink.textAlign = 'center';
-  ink.font = 'bold 142px Georgia';
-  ink.fillText('kōri', 488, 430);
+  ink.font = 'bold 102px Georgia';
+  ink.fillText('ayorume', 488, 430);
   const coverMap = new THREE.CanvasTexture(cover);
   coverMap.colorSpace = THREE.SRGBColorSpace;
   const exterior = new THREE.MeshStandardMaterial({map:coverMap, roughness:.92});
@@ -52,8 +52,8 @@ export function createTakeoutBox() {
   hinge.traverse(object=>{if(object instanceof THREE.Mesh)object.castShadow=false;});
   // Narrow fold lines and a small red wordmark on the front of the box.
   const brand=document.createElement('canvas');brand.width=512;brand.height=128;
-  const bc=brand.getContext('2d')!;bc.fillStyle='#c4b5a0';bc.fillRect(0,0,512,128);bc.fillStyle='#922e23';bc.font='bold 72px Georgia';bc.textAlign='center';bc.fillText('kōri',256,90);
+  const bc=brand.getContext('2d')!;bc.fillStyle='#c4b5a0';bc.fillRect(0,0,512,128);bc.fillStyle='#922e23';bc.font='bold 50px Georgia';bc.textAlign='center';bc.fillText('ayorume',256,82);
   const brandMap=new THREE.CanvasTexture(brand);brandMap.colorSpace=THREE.SRGBColorSpace;
-  const logo=new THREE.Mesh(new THREE.PlaneGeometry(.7,.175),new THREE.MeshStandardMaterial({map:brandMap,roughness:1}));logo.position.set(0,.32,2.075);box.add(logo);
+  const logo=new THREE.Mesh(new THREE.PlaneGeometry(1.05,.2625),new THREE.MeshStandardMaterial({map:brandMap,roughness:1}));logo.position.set(0,.32,2.075);box.add(logo);
   return { box, hinge };
 }

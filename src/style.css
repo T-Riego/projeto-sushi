@@ -74,3 +74,185 @@ h2 em, .section-heading h2 em { font-style: normal; letter-spacing: inherit; }
 @media (prefers-reduced-motion: reduce) {
   .dish-card:hover .dish-image > img.menu-photo { transform: none; }
 }
+
+/* AYORUME rebrand: responsive wordmark, Latin editorial marks and loading poster. */
+.site-header { gap: 24px; }
+.logo {
+  flex-shrink: 0;
+  padding-right: 0;
+  font-size: clamp(38px, 3.45vw, 50px);
+  font-weight: 650;
+  line-height: .9;
+  letter-spacing: -.075em;
+  white-space: nowrap;
+}
+.logo-dot { display: none; }
+.main-nav { margin-left: 0; }
+.site-footer .logo {
+  padding-right: 0;
+  font-size: 38px;
+  letter-spacing: -.075em;
+}
+
+.vertical-note {
+  position: absolute;
+  left: 1%;
+  top: 74px;
+  writing-mode: vertical-rl;
+  text-orientation: upright;
+  font-family: 'Barlow', Arial, sans-serif;
+  font-size: 10px;
+  font-weight: 500;
+  line-height: 1.7;
+  letter-spacing: 3px;
+  color: #a8aa9a;
+  opacity: .72;
+}
+.craft-seal {
+  position: absolute;
+  right: 0;
+  top: 78px;
+  z-index: 3;
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  color: var(--red);
+  transform: rotate(5deg);
+}
+.craft-seal > span {
+  border: 1px solid var(--red);
+  padding: 7px 8px;
+  font: 650 9px/1.3 'Barlow', Arial, sans-serif;
+  letter-spacing: 1.5px;
+  text-align: center;
+}
+.craft-seal small {
+  font-size: 7px;
+  line-height: 1.7;
+  letter-spacing: 1px;
+}
+.philosophy-monogram {
+  position: absolute;
+  left: -10px;
+  top: -60px;
+  color: #45503c;
+  font: 500 260px/1 'Fraunces', Georgia, serif;
+  letter-spacing: -.08em;
+  transform: rotate(-8deg);
+}
+.experience-mark {
+  position: absolute;
+  right: 250px;
+  bottom: 65px;
+  writing-mode: vertical-rl;
+  color: #a7aa9b;
+  font: 500 13px/1.3 'Barlow', Arial, sans-serif;
+  letter-spacing: 4px;
+  transform: rotate(8deg);
+}
+
+.scene-poster-placeholder {
+  display: grid;
+  place-items: center;
+  overflow: visible;
+  perspective: 900px;
+}
+.poster-box {
+  position: relative;
+  width: min(65%, 440px);
+  aspect-ratio: 1.62;
+  border: 1px solid #b2a187;
+  border-radius: 3px;
+  background:
+    radial-gradient(circle at 24% 18%, #e2d6c2 0 1px, transparent 1.5px),
+    radial-gradient(circle at 72% 64%, #b9aa9230 0 1px, transparent 1.5px),
+    #d1c1a8;
+  background-size: 19px 19px, 23px 23px, auto;
+  box-shadow: 0 32px 35px #4034252e;
+  transform: translateY(-2%) rotateX(58deg) rotateZ(-8deg);
+  transform-style: preserve-3d;
+}
+.poster-box::before {
+  content: '';
+  position: absolute;
+  left: -1px;
+  right: -1px;
+  bottom: -28px;
+  height: 28px;
+  border: 1px solid #a89578;
+  border-top: 0;
+  background: #b8a88f;
+  transform: rotateX(-34deg);
+  transform-origin: top;
+}
+.poster-box::after {
+  content: '';
+  position: absolute;
+  top: 1px;
+  right: -18px;
+  bottom: -13px;
+  width: 18px;
+  border: 1px solid #9d8d73;
+  border-left: 0;
+  background: #a99679;
+  transform: skewY(-34deg);
+  transform-origin: left top;
+}
+.poster-box span {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  z-index: 1;
+  color: var(--red);
+  font: 650 clamp(28px, 4vw, 53px)/1 'Fraunces', Georgia, serif;
+  letter-spacing: -.075em;
+  transform: translate(-50%, -50%);
+}
+.poster-box i {
+  position: absolute;
+  top: 0;
+  right: 22%;
+  bottom: 0;
+  width: 2.7%;
+  background: var(--red);
+  opacity: .9;
+}
+
+@media (max-width: 1150px) {
+  .craft-seal { right: -8px; top: 91px; }
+  .poster-box { width: min(68%, 390px); }
+}
+@media (max-width: 850px) {
+  .site-header .logo { font-size: 40px; }
+  .vertical-note { top: 80px; left: 7%; font-size: 8px; letter-spacing: 2px; }
+  .craft-seal { top: 75px; right: -3px; }
+  .craft-seal small { display: none; }
+  .philosophy-monogram { top: -45px; font-size: 220px; }
+  .experience-mark { right: 195px; font-size: 12px; }
+  .poster-box { width: min(70%, 320px); }
+}
+@media (max-width: 640px) {
+  .site-header { gap: 15px; }
+  .site-header .logo { font-size: 34px; }
+  .site-footer .logo { font-size: 34px; }
+  .header-actions { gap: 12px; }
+  .vertical-note { top: 65px; left: 0; font-size: 8px; letter-spacing: 2px; }
+  .craft-seal { right: 2px; top: 70px; }
+  .craft-seal > span { padding: 6px; font-size: 8px; }
+  .philosophy-monogram { top: -25px; left: -5px; font-size: 210px; }
+  .experience-mark { right: 10px; bottom: 35px; font-size: 11px; letter-spacing: 4px; }
+  .poster-box { width: min(74%, 280px); }
+  .poster-box::before { bottom: -20px; height: 20px; }
+  .poster-box::after { right: -13px; bottom: -9px; width: 13px; }
+  .mobile-toggle,
+  .quick-add,
+  .picker-arrows button {
+    min-width: 44px;
+    min-height: 44px;
+  }
+}
+@media (max-width: 360px) {
+  .site-header .logo { font-size: 31px; }
+  .header-actions .button-small { display: none; }
+  .poster-box { width: 76%; }
+}
