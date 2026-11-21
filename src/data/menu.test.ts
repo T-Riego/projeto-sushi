@@ -1,9 +1,16 @@
-import { describe, expect, it } from 'vitest'
+import { describe, expect, expectTypeOf, it } from 'vitest'
 
-import { heroSelections } from './heroSelections'
+import { heroSelections, type HeroSelection } from './heroSelections'
 import { menuCategories, menuItems } from './menu'
 import { restaurant } from './restaurant'
-import type { MenuItem } from '../types/menu'
+import type { CheckoutDraft, CheckoutSchedule } from '../types/flows'
+import type { CartLine, MenuItem, MenuItemId, ProductOptionGroup } from '../types/menu'
+
+type IsStrictReadonlyArray<T> = T extends readonly unknown[]
+  ? T extends unknown[]
+    ? false
+    : true
+  : false
 
 const expectedProducts = {
   'sunomono-ayorume': 26,
@@ -69,6 +76,14 @@ describe('menu AYORUME', () => {
     ])
   })
 
+  it('mantém todos os destaques vinculados a produtos do catálogo', () => {
+    const productIds = new Set(menuItems.map(({ id }) => id))
+
+    for (const selection of heroSelections) {
+      expect(productIds.has(selection.productId), selection.productId).toBe(true)
+    }
+  })
+
   it('mantém conteúdo comercial completo e imagens locais em todos os produtos', () => {
     for (const item of menuItems) {
       expect(item.description.length, item.id).toBeGreaterThan(20)
@@ -120,6 +135,23 @@ describe('menu AYORUME', () => {
     ])
   })
 
+  it('usa IDs de intensidade estáveis e opções únicas em cada produto', () => {
+    const spicyOptions = menuItems
+      .find(({ id }) => id === 'atum-picante')
+      ?.optionGroups?.find(({ id }) => id === 'intensidade')
+      ?.options.map(({ id }) => id)
+
+    expect(spicyOptions).toEqual(['picante-suave', 'picante-tradicional'])
+
+    for (const item of menuItems) {
+      const optionIds = item.optionGroups?.flatMap(({ options }) =>
+        options.map(({ id }) => id),
+      ) ?? []
+
+      expect(new Set(optionIds).size, item.id).toBe(optionIds.length)
+    }
+  })
+
   it('mantém nomes e porções operacionais aprovados', () => {
     const summary = Object.fromEntries(
       menuItems.map(({ id, name, portionLabel }) => [id, { name, portionLabel }]),
@@ -134,17 +166,26 @@ describe('menu AYORUME', () => {
     })
   })
 
-  it('aceita metadados editoriais opcionais no produto', () => {
-    const editorialItem: MenuItem = {
-      ...menuItems[0],
-      badge: 'Escolha da casa',
-      featured: true,
-    }
-
-    expect(editorialItem).toMatchObject({
-      badge: 'Escolha da casa',
-      featured: true,
-    })
+  it('expõe IDs, metadados e coleções readonly no contrato de domínio', () => {
+    expectTypeOf<MenuItemId>().toEqualTypeOf<keyof typeof expectedProducts>()
+    expectTypeOf<MenuItem['id']>().toEqualTypeOf<MenuItemId>()
+    expectTypeOf<CartLine['productId']>().toEqualTypeOf<MenuItemId>()
+    expectTypeOf<HeroSelection['productId']>().toEqualTypeOf<MenuItemId>()
+    expectTypeOf<MenuItem['badge']>().toEqualTypeOf<string | undefined>()
+    expectTypeOf<MenuItem['featured']>().toEqualTypeOf<boolean | undefined>()
+    expectTypeOf<CheckoutDraft['schedule']>().toEqualTypeOf<CheckoutSchedule>()
+    expectTypeOf<IsStrictReadonlyArray<typeof menuItems>>().toEqualTypeOf<true>()
+    expectTypeOf<IsStrictReadonlyArray<typeof menuCategories>>().toEqualTypeOf<true>()
+    expectTypeOf<IsStrictReadonlyArray<typeof heroSelections>>().toEqualTypeOf<true>()
+    expectTypeOf<IsStrictReadonlyArray<MenuItem['ingredients']>>().toEqualTypeOf<true>()
+    expectTypeOf<IsStrictReadonlyArray<MenuItem['tags']>>().toEqualTypeOf<true>()
+    expectTypeOf<IsStrictReadonlyArray<MenuItem['allergens']>>().toEqualTypeOf<true>()
+    expectTypeOf<
+      IsStrictReadonlyArray<NonNullable<MenuItem['optionGroups']>>
+    >().toEqualTypeOf<true>()
+    expectTypeOf<
+      IsStrictReadonlyArray<ProductOptionGroup['options']>
+    >().toEqualTypeOf<true>()
   })
 
   it('descreve a unidade fictícia e sua operação semanal', () => {

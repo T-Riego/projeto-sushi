@@ -14,9 +14,13 @@ export interface CheckoutAddress {
   neighborhood: string
 }
 
+export type CheckoutSchedule =
+  | { kind: 'asap' }
+  | { kind: 'scheduled'; value: string }
+
 export interface CheckoutDraft {
   mode?: FulfillmentMode
-  schedule: 'asap' | string
+  schedule: CheckoutSchedule
   contact: CheckoutContact
   address?: CheckoutAddress
   payment?: PaymentMethod

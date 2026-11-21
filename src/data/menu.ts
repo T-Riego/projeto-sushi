@@ -1,6 +1,6 @@
 import type { MenuCategory, MenuItem, ProductOptionGroup } from '../types/menu'
 
-export const menuCategories: MenuCategory[] = [
+export const menuCategories: readonly MenuCategory[] = [
   {
     id: 'entradas',
     label: 'Entradas',
@@ -31,9 +31,9 @@ export const menuCategories: MenuCategory[] = [
     label: 'Bebidas',
     description: 'Misturas sem álcool pensadas para acompanhar o menu.',
   },
-]
+] as const satisfies readonly MenuCategory[]
 
-const extrasGroup: ProductOptionGroup = {
+const extrasGroup = {
   id: 'extras',
   label: 'Acompanhamentos extras',
   selection: 'multiple',
@@ -42,20 +42,20 @@ const extrasGroup: ProductOptionGroup = {
     { id: 'gengibre-extra', label: 'Gengibre em conserva', priceDelta: 4 },
     { id: 'wasabi-extra', label: 'Wasabi', priceDelta: 3 },
   ],
-}
+} as const satisfies ProductOptionGroup
 
-const spiceGroup: ProductOptionGroup = {
+const spiceGroup = {
   id: 'intensidade',
   label: 'Intensidade da pimenta',
   selection: 'single',
   required: true,
   options: [
-    { id: 'suave', label: 'Suave', priceDelta: 0 },
-    { id: 'tradicional', label: 'Tradicional', priceDelta: 0 },
+    { id: 'picante-suave', label: 'Suave', priceDelta: 0 },
+    { id: 'picante-tradicional', label: 'Tradicional', priceDelta: 0 },
   ],
-}
+} as const satisfies ProductOptionGroup
 
-const iceGroup: ProductOptionGroup = {
+const iceGroup = {
   id: 'gelo',
   label: 'Como servir',
   selection: 'single',
@@ -64,9 +64,9 @@ const iceGroup: ProductOptionGroup = {
     { id: 'com-gelo', label: 'Com gelo', priceDelta: 0 },
     { id: 'sem-gelo', label: 'Sem gelo', priceDelta: 0 },
   ],
-}
+} as const satisfies ProductOptionGroup
 
-export const menuItems: MenuItem[] = [
+export const menuItems: readonly MenuItem[] = [
   {
     id: 'sunomono-ayorume',
     name: 'Sunomono AYORUME',
@@ -416,4 +416,4 @@ export const menuItems: MenuItem[] = [
     available: true,
     optionGroups: [iceGroup],
   },
-]
+] as const satisfies readonly MenuItem[]

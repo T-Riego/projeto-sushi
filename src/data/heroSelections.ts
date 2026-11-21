@@ -1,12 +1,12 @@
-import type { SceneIndex } from '../types/menu'
+import type { MenuItemId, SceneIndex } from '../types/menu'
 
 export interface HeroSelection {
-  productId: string
-  sceneIndex: SceneIndex
-  poster: string
+  readonly productId: MenuItemId
+  readonly sceneIndex: SceneIndex
+  readonly poster: string
 }
 
-export const heroSelections: HeroSelection[] = [
+export const heroSelections: readonly HeroSelection[] = [
   {
     productId: 'box-signature',
     sceneIndex: 0,
@@ -22,4 +22,4 @@ export const heroSelections: HeroSelection[] = [
     sceneIndex: 2,
     poster: 'assets/sushi-2.png',
   },
-]
+] as const satisfies readonly HeroSelection[]

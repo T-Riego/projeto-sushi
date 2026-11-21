@@ -4,7 +4,7 @@ Landing page conceito com Vite, React, TypeScript, Tailwind CSS e Three.js.
 
 ## Executar
 
-Use Node 22 como no ambiente em que o projeto foi testado.
+Use Node 24 ou superior, como no ambiente em que o projeto foi testado.
 
 ~~~bash
 npm ci
