@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest'
 
+import { menuItems } from '../data/menu'
 import type { CartLine } from '../types/menu'
 import {
   CART_STORAGE_KEY,
@@ -31,10 +32,56 @@ describe('cart', () => {
       'picante-tradicional',
       'wasabi-extra',
     ])
-    expect(createCartLine('atum-picante', [], 140).quantity).toBe(99)
-    expect(createCartLine('atum-picante', [], -4).quantity).toBe(1)
-    expect(createCartLine('atum-picante', [], 2.9).quantity).toBe(2)
-    expect(createCartLine('atum-picante', []).key).toBe('atum-picante::base')
+    expect(createCartLine('garden-roll', [], 140).quantity).toBe(99)
+    expect(createCartLine('garden-roll', [], -4).quantity).toBe(1)
+    expect(createCartLine('garden-roll', [], 2.9).quantity).toBe(2)
+    expect(createCartLine('garden-roll', []).key).toBe('garden-roll::base')
+  })
+
+  it('mantém IDs de opção seguros e únicos dentro de cada produto', () => {
+    const safeOptionId = /^[a-z0-9]+(?:-[a-z0-9]+)*$/
+
+    for (const item of menuItems) {
+      const optionIds = item.optionGroups?.flatMap(({ options }) =>
+        options.map(({ id }) => id),
+      ) ?? []
+
+      for (const optionId of optionIds) {
+        expect(optionId, `${item.id}: ${optionId}`).toMatch(safeOptionId)
+        expect(optionId, item.id).not.toBe('base')
+        expect(optionId, item.id).not.toContain('|')
+      }
+
+      expect(new Set(optionIds).size, item.id).toBe(optionIds.length)
+    }
+  })
+
+  it('rejeita opções desconhecidas e seleções impossíveis dos grupos', () => {
+    expect(() => createCartLine('garden-roll', ['opcao-inexistente'])).toThrow(
+      RangeError,
+    )
+    expect(() => createCartLine('cha-citrico', [])).toThrow(RangeError)
+    expect(() =>
+      createCartLine('cha-citrico', ['com-gelo', 'sem-gelo']),
+    ).toThrow(RangeError)
+    expect(() => createCartLine('atum-picante', ['wasabi-extra'])).toThrow(
+      RangeError,
+    )
+
+    expect(createCartLine('cha-citrico', ['com-gelo'])).toEqual({
+      key: 'cha-citrico::com-gelo',
+      productId: 'cha-citrico',
+      quantity: 1,
+      optionIds: ['com-gelo'],
+    })
+    expect(
+      createCartLine('atum-picante', [
+        'wasabi-extra',
+        'picante-tradicional',
+      ]),
+    ).toMatchObject({
+      key: 'atum-picante::picante-tradicional|wasabi-extra',
+    })
   })
 
   it('descarta a chave legada e retorna vazio quando não há carrinho v2', () => {
@@ -78,12 +125,57 @@ describe('cart', () => {
     expect(readCart()).toEqual([valid])
   })
 
-  it('calcula preço unitário e total usando somente opções válidas', () => {
-    const line = createCartLine(
-      'box-signature',
-      ['shoyu-extra', 'opcao-inexistente'],
-      2,
+  it('descarta linhas v2 com seleções semanticamente inválidas', () => {
+    const valid = {
+      key: 'cha-citrico::com-gelo',
+      productId: 'cha-citrico',
+      quantity: 1,
+      optionIds: ['com-gelo'],
+    } satisfies CartLine
+
+    localStorage.setItem(
+      CART_STORAGE_KEY,
+      JSON.stringify([
+        {
+          key: 'cha-citrico::base',
+          productId: 'cha-citrico',
+          quantity: 1,
+          optionIds: [],
+        },
+        {
+          key: 'cha-citrico::com-gelo|sem-gelo',
+          productId: 'cha-citrico',
+          quantity: 1,
+          optionIds: ['com-gelo', 'sem-gelo'],
+        },
+        {
+          key: 'atum-picante::wasabi-extra',
+          productId: 'atum-picante',
+          quantity: 1,
+          optionIds: ['wasabi-extra'],
+        },
+        valid,
+      ]),
     )
+
+    expect(readCart()).toEqual([valid])
+  })
+
+  it('canonicaliza chaves duplicadas somando quantidades com limite de 99', () => {
+    const line = createCartLine('garden-roll', ['shoyu-extra'], 60)
+    localStorage.setItem(
+      CART_STORAGE_KEY,
+      JSON.stringify([line, { ...line, quantity: 50 }]),
+    )
+
+    expect(readCart()).toEqual([{ ...line, quantity: 99 }])
+  })
+
+  it('calcula preço unitário e total usando somente opções válidas', () => {
+    const line = {
+      ...createCartLine('box-signature', ['shoyu-extra'], 2),
+      optionIds: ['shoyu-extra', 'opcao-inexistente'],
+    }
 
     expect(getLineUnitPrice(line)).toBe(131)
     expect(getCartTotal([line])).toBe(262)

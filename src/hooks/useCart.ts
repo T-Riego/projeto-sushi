@@ -17,7 +17,15 @@ export function useCart() {
 
   const addLine = useCallback(
     (productId: MenuItemId, optionIds: readonly string[], quantity = 1) => {
-      const incoming = createCartLine(productId, optionIds, quantity)
+      let incoming: CartLine
+      try {
+        incoming = createCartLine(productId, optionIds, quantity)
+      } catch (error) {
+        if (error instanceof RangeError) {
+          return
+        }
+        throw error
+      }
 
       setLines((current) => {
         const existingIndex = current.findIndex(({ key }) => key === incoming.key)

@@ -74,6 +74,29 @@ describe('useCart', () => {
     expect(readCart()).toEqual([expected])
   })
 
+  it('ignora seleções de opções inválidas sem quebrar a UI', () => {
+    const { result } = renderHook(() => useCart())
+
+    expect(() =>
+      act(() => result.current.addLine('cha-citrico', [])),
+    ).not.toThrow()
+    expect(() =>
+      act(() =>
+        result.current.addLine('cha-citrico', ['com-gelo', 'sem-gelo']),
+      ),
+    ).not.toThrow()
+    expect(() =>
+      act(() => result.current.addLine('atum-picante', ['wasabi-extra'])),
+    ).not.toThrow()
+    expect(result.current.lines).toEqual([])
+
+    act(() => result.current.addLine('cha-citrico', ['com-gelo']))
+
+    expect(result.current.lines).toEqual([
+      createCartLine('cha-citrico', ['com-gelo']),
+    ])
+  })
+
   it('altera quantidades, remove ao chegar a zero e remove por chave', () => {
     const { result } = renderHook(() => useCart())
 

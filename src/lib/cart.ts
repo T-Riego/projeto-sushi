@@ -10,12 +10,47 @@ function normalizeQuantity(quantity: number): number {
   return Math.min(99, Math.max(1, integer))
 }
 
+function normalizeAndValidateOptionIds(
+  productId: MenuItemId,
+  optionIds: readonly string[],
+): string[] {
+  const item = menuItems.find(({ id }) => id === productId)
+  if (!item) {
+    throw new RangeError(`Unknown product: ${productId}`)
+  }
+
+  const normalizedOptionIds = [...new Set(optionIds)].sort()
+  const selectedOptionIds = new Set(normalizedOptionIds)
+  const knownOptionIds = new Set(
+    item.optionGroups?.flatMap(({ options }) => options.map(({ id }) => id)) ?? [],
+  )
+
+  if (normalizedOptionIds.some((optionId) => !knownOptionIds.has(optionId))) {
+    throw new RangeError(`Invalid option selection for product: ${productId}`)
+  }
+
+  for (const group of item.optionGroups ?? []) {
+    const selectedCount = group.options.filter(({ id }) =>
+      selectedOptionIds.has(id),
+    ).length
+
+    if (group.selection === 'single' && selectedCount > 1) {
+      throw new RangeError(`Too many options selected for group: ${group.id}`)
+    }
+    if (group.required && selectedCount === 0) {
+      throw new RangeError(`Missing required option group: ${group.id}`)
+    }
+  }
+
+  return normalizedOptionIds
+}
+
 export function createCartLine(
   productId: MenuItemId,
   optionIds: readonly string[],
   quantity = 1,
 ): CartLine {
-  const normalizedOptionIds = [...new Set(optionIds)].sort()
+  const normalizedOptionIds = normalizeAndValidateOptionIds(productId, optionIds)
 
   return {
     key: `${productId}::${normalizedOptionIds.join('|') || 'base'}`,
@@ -59,19 +94,37 @@ function parseCartLine(value: unknown): CartLine | undefined {
     return undefined
   }
 
-  const validOptionIds = new Set(
-    item.optionGroups?.flatMap(({ options }) => options.map(({ id }) => id)) ?? [],
-  )
-  if (!value.optionIds.every((optionId) => validOptionIds.has(optionId))) {
-    return undefined
+  let normalized: CartLine
+  try {
+    normalized = createCartLine(
+      item.id,
+      value.optionIds,
+      value.quantity as number,
+    )
+  } catch (error) {
+    if (error instanceof RangeError) {
+      return undefined
+    }
+    throw error
   }
 
-  const normalized = createCartLine(
-    item.id,
-    value.optionIds,
-    value.quantity as number,
-  )
   return normalized.key === value.key ? normalized : undefined
+}
+
+function mergeDuplicateLines(lines: readonly CartLine[]): CartLine[] {
+  const linesByKey = new Map<string, CartLine>()
+
+  for (const line of lines) {
+    const existing = linesByKey.get(line.key)
+    linesByKey.set(
+      line.key,
+      existing
+        ? { ...existing, quantity: Math.min(99, existing.quantity + line.quantity) }
+        : line,
+    )
+  }
+
+  return [...linesByKey.values()]
 }
 
 export function readCart(storage?: Storage): CartLine[] {
@@ -93,12 +146,15 @@ export function readCart(storage?: Storage): CartLine[] {
     }
 
     const parsed: unknown = JSON.parse(serialized)
-    return Array.isArray(parsed)
-      ? parsed.flatMap((value) => {
-          const line = parseCartLine(value)
-          return line ? [line] : []
-        })
-      : []
+    if (!Array.isArray(parsed)) {
+      return []
+    }
+
+    const validLines = parsed.flatMap((value) => {
+      const line = parseCartLine(value)
+      return line ? [line] : []
+    })
+    return mergeDuplicateLines(validLines)
   } catch {
     return []
   }
