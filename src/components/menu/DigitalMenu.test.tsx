@@ -5,7 +5,11 @@ import { fireEvent, render, screen, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { describe, expect, it, vi } from 'vitest'
 
+import { menuItems } from '../../data/menu'
 import { DigitalMenu } from './DigitalMenu'
+import { ProductDetails } from './ProductDetails'
+
+const atumPicante = menuItems.find(({ id }) => id === 'atum-picante')!
 
 const catalogCss = readFileSync(
   resolve(process.cwd(), 'src/styles/catalog.css'),
@@ -247,6 +251,53 @@ describe('DigitalMenu', () => {
     expect(opener).toHaveFocus()
   })
 
+  it('notifica o fechamento exatamente uma vez em cada fluxo do diálogo', async () => {
+    const user = userEvent.setup()
+    const onAddLine = vi.fn()
+    const onClose = vi.fn()
+    const renderDetails = (product: typeof atumPicante | null) => (
+      <ProductDetails
+        product={product}
+        onAddLine={onAddLine}
+        onClose={onClose}
+      />
+    )
+    const { rerender } = render(renderDetails(atumPicante))
+    const dialog = screen.getByRole('dialog', { name: 'Atum picante' })
+    const emitNativeClose = () =>
+      fireEvent(dialog, new Event('close'))
+    const reopen = () => {
+      rerender(renderDetails(null))
+      rerender(renderDetails(atumPicante))
+      expect(dialog).toHaveAttribute('open')
+    }
+    const expectSingleClose = async (
+      closeAction: () => void | Promise<void>,
+    ) => {
+      onClose.mockClear()
+      await closeAction()
+      emitNativeClose()
+      expect(onClose).toHaveBeenCalledOnce()
+    }
+
+    await expectSingleClose(() =>
+      user.click(within(dialog).getByRole('button', { name: 'Fechar detalhes' })),
+    )
+
+    reopen()
+    await expectSingleClose(() => {
+      fireEvent(
+        dialog,
+        new Event('cancel', { bubbles: true, cancelable: true }),
+      )
+    })
+
+    reopen()
+    await expectSingleClose(() =>
+      user.click(within(dialog).getByRole('button', { name: 'Adicionar à sacola' })),
+    )
+  })
+
   it('troca imagens ausentes pelo fallback local sem repetir a troca', () => {
     renderMenu()
 
@@ -256,6 +307,10 @@ describe('DigitalMenu', () => {
 
     fireEvent.error(image)
     const fallbackSource = image.src
+    expect(image).toHaveAttribute(
+      'alt',
+      'Imagem ilustrativa de sushi AYORUME',
+    )
     image.src = '/assets/teste-sem-fallback.png'
     fireEvent.error(image)
 
@@ -284,5 +339,11 @@ describe('DigitalMenu', () => {
     })
 
     expect(undersizedFunctionalText).toEqual([])
+  })
+
+  it('alinha o bleed dos filtros ao gutter de 15px em telas compactas', () => {
+    expect(catalogCss).toMatch(
+      /@media\s*\(max-width:\s*360px\)\s*\{\s*\.catalog-filter-row\s*\{\s*margin-inline:\s*-15px;\s*padding-inline:\s*15px;\s*scroll-padding-inline:\s*15px;\s*\}\s*\}/,
+    )
   })
 })

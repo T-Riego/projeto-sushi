@@ -30,6 +30,7 @@ export function handleCatalogImageError(
   }
 
   image.dataset.catalogFallback = 'true'
+  image.alt = 'Imagem ilustrativa de sushi AYORUME'
   image.src = catalogAssetPath('assets/sushi-0.png')
 }
 

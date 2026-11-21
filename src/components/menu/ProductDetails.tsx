@@ -144,7 +144,6 @@ export function ProductDetails({
       aria-describedby={
         product ? `product-description-${product.id}` : undefined
       }
-      onClose={onClose}
       onCancel={(event) => {
         event.preventDefault()
         requestClose()
