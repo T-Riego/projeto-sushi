@@ -1,34 +1,27 @@
-import { lazy, Suspense, useCallback, useEffect, useRef, useState } from 'react';
-import { ArrowUpRight, ArrowRight, ArrowLeft, Plus, Minus, ShoppingBag, X, Menu, MoveUpRight, MousePointer2, Rotate3D, Leaf, Fish, UtensilsCrossed, Check, Copy, ChevronDown } from 'lucide-react';
-const SushiScene = lazy(() => import('./SushiScene'));
+import { useEffect, useRef, useState } from 'react';
+import { ArrowUpRight, Plus, Minus, ShoppingBag, X, Menu, MoveUpRight, Leaf, Check, Copy } from 'lucide-react';
+import { HeroShowcase } from './components/hero/HeroShowcase';
+import type { MenuItemId } from './types/menu';
 const assetPath=(path:string)=>`${import.meta.env.BASE_URL}${path.replace(/^\/+/, '')}`;
 const dishes = [
-  {name:'Box Signature',category:'Combinados',detail:'Uramakis, makis, tamagos e niguiris de camarão.',pieces:18,price:128,tag:'Seu ritual, completo',image:0,photo:assetPath('assets/menu/signature.webp'),alt:'Combinado de niguiris e rolls em prato branco'},
-  {name:'Garden Box',category:'Vegetarianos',detail:'Uramakis de abacate, pepino e manga para dividir.',pieces:12,price:84,tag:'Leve por natureza',image:1,photo:assetPath('assets/menu/garden.webp'),alt:'Rolls de vegetais em um prato branco com hashis'},
-  {name:'Salmão Box',category:'Combinados',detail:'Doze niguiris com cortes de salmão e cebolinha.',pieces:12,price:98,tag:'O clássico, elevado',image:2,photo:assetPath('assets/menu/salmao-box.webp'),alt:'Niguiris cobertos por fatias de salmão'},
-  {name:'Dupla de Salmão',category:'Niguiris',detail:'Nosso niguiri de salmão, em uma pequena pausa.',pieces:2,price:18,tag:'Seu pequeno ritual',image:3,photo:assetPath('assets/menu/dupla-salmao.webp'),alt:'Detalhe de um niguiri de salmão sobre arroz'},
-  {name:'Garden para dois',category:'Vegetarianos',detail:'Nossa seleção vegetal em uma porção para dividir.',pieces:16,price:72,tag:'Melhor junto',image:4,photo:assetPath('assets/menu/garden-dois.webp'),alt:'Rolls de vegetais e abacate em uma bandeja'},
-  {name:'Experiência AYORUME',category:'Combinados',detail:'Uma seleção de salmão, atum e rolls da casa.',pieces:16,price:118,tag:'Um pouco de tudo',image:5,photo:assetPath('assets/menu/experiencia-ayorume.jpg'),alt:'Seleção de sushi servida em uma tábua escura'},
+  {id:'box-signature',name:'Box Signature',category:'Combinados',detail:'Uramakis, makis, tamagos e niguiris de camarão.',pieces:18,price:128,tag:'Seu ritual, completo',image:0,photo:assetPath('assets/menu/signature.webp'),alt:'Combinado de niguiris e rolls em prato branco'},
+  {id:'garden-box',name:'Garden Box',category:'Vegetarianos',detail:'Uramakis de abacate, pepino e manga para dividir.',pieces:12,price:84,tag:'Leve por natureza',image:1,photo:assetPath('assets/menu/garden.webp'),alt:'Rolls de vegetais em um prato branco com hashis'},
+  {id:'salmao-box',name:'Salmão Box',category:'Combinados',detail:'Doze niguiris com cortes de salmão e cebolinha.',pieces:12,price:98,tag:'O clássico, elevado',image:2,photo:assetPath('assets/menu/salmao-box.webp'),alt:'Niguiris cobertos por fatias de salmão'},
+  {id:'dupla-salmao',name:'Dupla de Salmão',category:'Niguiris',detail:'Nosso niguiri de salmão, em uma pequena pausa.',pieces:2,price:18,tag:'Seu pequeno ritual',image:3,photo:assetPath('assets/menu/dupla-salmao.webp'),alt:'Detalhe de um niguiri de salmão sobre arroz'},
+  {id:'garden-para-dois',name:'Garden para dois',category:'Vegetarianos',detail:'Nossa seleção vegetal em uma porção para dividir.',pieces:16,price:72,tag:'Melhor junto',image:4,photo:assetPath('assets/menu/garden-dois.webp'),alt:'Rolls de vegetais e abacate em uma bandeja'},
+  {id:'experiencia-ayorume',name:'Experiência AYORUME',category:'Combinados',detail:'Uma seleção de salmão, atum e rolls da casa.',pieces:16,price:118,tag:'Um pouco de tudo',image:5,photo:assetPath('assets/menu/experiencia-ayorume.jpg'),alt:'Seleção de sushi servida em uma tábua escura'},
 ];
 const money=(value:number)=>new Intl.NumberFormat('pt-BR',{style:'currency',currency:'BRL',maximumFractionDigits:2}).format(value);
 function FallbackArt(){return <img className="fallback-art" src={assetPath('assets/sushi-0.png')} alt="Seleção de sushi AYORUME" width="720" height="600" />}
 export default function App(){
- const [selected,setSelected]=useState(0),[exploded,setExploded]=useState(false),[images]=useState<string[]>([0,1,2].map(i=>assetPath(`assets/sushi-${i}.png`))),[failed,setFailed]=useState(false),[sceneReady,setSceneReady]=useState(false),[startScene,setStartScene]=useState(false),[category,setCategory]=useState('Todos'),[cartOpen,setCartOpen]=useState(false),[navOpen,setNavOpen]=useState(false),[toast,setToast]=useState(''),[note,setNote]=useState(''),[summary,setSummary]=useState('');
- useEffect(() => {
-   let afterPaint = 0;
-   const firstFrame = requestAnimationFrame(() => {
-     afterPaint = requestAnimationFrame(() => setStartScene(true));
-   });
-   return () => { cancelAnimationFrame(firstFrame); cancelAnimationFrame(afterPaint); };
- }, []);
+ const [images]=useState<string[]>([0,1,2].map(i=>assetPath(`assets/sushi-${i}.png`))),[category,setCategory]=useState('Todos'),[cartOpen,setCartOpen]=useState(false),[navOpen,setNavOpen]=useState(false),[toast,setToast]=useState(''),[note,setNote]=useState(''),[summary,setSummary]=useState('');
  const [cart,setCart]=useState<Record<number,number>>(()=>{try{const saved=JSON.parse(localStorage.getItem('ayorume-cart-v1')||'{}');return Object.fromEntries(Object.entries(saved).filter(([id,q])=>Number.isInteger(Number(id))&&Number(id)>=0&&Number(id)<dishes.length&&typeof q==='number'&&Number.isInteger(q)&&q>0&&q<=99)) as Record<number,number>;}catch{return {};}});
  const dialog=useRef<HTMLDialogElement>(null);const toastTimer=useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
  const count=Object.values(cart).reduce((sum,q)=>sum+q,0),total=Object.entries(cart).reduce((sum,[id,q])=>sum+dishes[+id].price*q,0);
  const notify=(message:string)=>{setToast(message);clearTimeout(toastTimer.current);toastTimer.current=setTimeout(()=>setToast(''),3000);};
  const add=(id:number)=>{setCart(c=>({...c,[id]:Math.min((c[id]||0)+1,99)}));setSummary('');notify(`${dishes[id].name} adicionado à sacola`);};
+ const handleHeroAdd=(productId:MenuItemId)=>{const legacyIndex=dishes.findIndex(dish=>dish.id===productId);if(legacyIndex<0)return;add(legacyIndex);setCartOpen(true);};
  const change=(id:number,delta:number)=>{setCart(c=>{const next={...c,[id]:Math.min((c[id]||0)+delta,99)};if(next[id]<=0)delete next[id];return next;});setSummary('');};
- const select=(id:number)=>{setSelected(id);setExploded(false);};
- const onReady=useCallback(()=>setSceneReady(true),[]),onFail=useCallback(()=>setFailed(true),[]);
  useEffect(()=>{try{localStorage.setItem('ayorume-cart-v1',JSON.stringify(cart));}catch{/* Cart remains available in memory. */}},[cart]);
  useEffect(()=>{const d=dialog.current;if(cartOpen&&!d?.open)d?.showModal();else if(!cartOpen&&d?.open)d.close();document.body.style.overflow=cartOpen?'hidden':'';return()=>{document.body.style.overflow='';};},[cartOpen]);
  useEffect(()=>()=>clearTimeout(toastTimer.current),[]);
@@ -40,21 +33,7 @@ export default function App(){
    <div className="header-actions"><button className="bag-button" onClick={()=>setCartOpen(true)} aria-label={`Abrir sacola, ${count} itens`}><ShoppingBag size={19}/><span className="bag-count">{count.toString().padStart(2,'0')}</span></button><a href="#menu" className="button button-small">Fazer pedido <ArrowUpRight size={16}/></a><button className="mobile-toggle" aria-label={navOpen?'Fechar navegação':'Abrir navegação'} aria-expanded={navOpen} onClick={()=>setNavOpen(!navOpen)}>{navOpen?<X/>:<Menu/>}</button></div>
   </header>
   <main>
-   <section className="hero wrap" aria-labelledby="hero-title">
-    <div className="hero-copy"><h1 id="hero-title"><span>Pequenos rituais.</span> <span>Grandes <em>sabores.</em></span></h1><p>O cuidado em cada corte. A surpresa em cada encontro.<br className="desktop-break"/> Descubra um novo jeito de sentir a cozinha japonesa.</p><div className="hero-ctas"><a href="#menu" className="button">Explorar o menu <ArrowUpRight size={19}/></a><button className="text-button" onClick={()=>{add(selected);setCartOpen(true);}}>Quero experimentar <ArrowRight size={16}/></button></div><div className="hero-principles"><span><Fish size={17} strokeWidth={1.4}/> Ingredientes selecionados</span><i/><span><UtensilsCrossed size={16} strokeWidth={1.4}/> Feito à mão</span></div></div>
-    <div className="hero-visual">
-     <div className="visual-topline"><span>UM CONVITE AOS SENTIDOS</span><span>SUSHI AUTORAL</span></div>
-     <div className="sun-disc"/><div className="disc-ring"/><span className="vertical-note" aria-hidden="true">SABOR<br/>PRESENÇA</span>
-     <div className="craft-seal" aria-hidden="true"><span>FEI<br/>TO</span><small>COM<br/>ALMA</small></div>
-     <div className="scene-shell" data-ready={sceneReady && !failed}>
-      {failed?<img className="scene-poster" src={assetPath(`assets/sushi-${selected}.png`)} width="720" height="600" alt="Seleção de sushi AYORUME"/>:<div className="scene-poster scene-poster-placeholder" aria-hidden="true"><div className="poster-box"><span>ayorume</span><i/></div></div>}
-      {startScene && !failed && <Suspense fallback={null}><SushiScene selected={selected} exploded={exploded} onReady={onReady} onFail={onFail} onTap={()=>setExploded(v=>!v)}/></Suspense>}
-     </div>
-     <div className="plate-caption" aria-live="polite"><span className="caption-line"/><div><span className="eyebrow">{dishes[selected].tag}</span><strong>{dishes[selected].name}</strong><small>{dishes[selected].pieces} peças <span>·</span> {money(dishes[selected].price)}</small></div></div>
-     <div className="scene-toolbar"><span><MousePointer2 size={14}/>{failed?'Explore nossos sabores':'Passe sobre as peças · arraste para girar'}</span><button className={exploded?'view-button active':'view-button'} disabled={failed} onClick={()=>setExploded(!exploded)} aria-pressed={exploded}><Rotate3D size={16}/>{exploded?'Acomodar peças':'Levantar todas'}</button></div>
-    </div>
-    <div className="hero-bottom"><a href="#menu" className="discover-link"><span className="circle-arrow"><ChevronDown size={16}/></span>SEU PRÓXIMO FAVORITO ESTÁ AQUI</a><div className="plate-picker" aria-label="Escolher prato em destaque"><div className="picker-options">{dishes.slice(0,3).map((d,i)=><button className={`picker ${i===selected?'selected':''}`} onClick={()=>select(i)} key={d.name} aria-pressed={i===selected}><span className="picker-number">0{i+1}</span><span>{d.name}</span><span className="picker-indicator"/></button>)}</div><div className="picker-arrows"><button aria-label="Prato anterior" onClick={()=>select((selected+2)%3)}><ArrowLeft size={17}/></button><button aria-label="Próximo prato" onClick={()=>select((selected+1)%3)}><ArrowRight size={17}/></button></div></div></div>
-   </section>
+   <HeroShowcase onAddProduct={handleHeroAdd} />
    <div className="ritual-strip" aria-hidden="true"><span>CORTE PRECISO</span><span className="strip-flower">✳</span><span>SABOR QUE FICA</span><span className="strip-flower">✳</span><span>FEITO NO SEU TEMPO</span><span className="strip-flower">✳</span><span>ESSÊNCIA JAPONESA</span><span className="strip-flower">✳</span><span>SEM PRESSA. COM ALMA.</span></div>
    <section id="menu" className="menu-section wrap" aria-labelledby="menu-title"><div className="section-heading"><div><div className="eyebrow">01 — ENCONTRE O SEU FAVORITO</div><h2 id="menu-title">A cada escolha,<br/>uma nova <em>descoberta.</em></h2></div><p>Dos clássicos que abraçam aos encontros<br className="desktop-break"/> que surpreendem. Escolha seu momento.</p></div><div className="menu-controls"><div className="category-tabs" role="group" aria-label="Categorias do menu">{['Todos','Niguiris','Combinados','Vegetarianos'].map(c=><button key={c} className={category===c?'active':''} onClick={()=>setCategory(c)} aria-pressed={category===c}>{c==='Vegetarianos'&&<Leaf size={14}/>} {c}</button>)}</div></div><div className="dish-grid">{dishes.map((d,i)=>(category==='Todos'||category===d.category)&&<article className="dish-card" key={d.name}><div className={`dish-image dish-tone-${d.image}`}><span className="dish-category">{d.category}</span><img className="menu-photo" src={d.photo} alt={d.alt} width="960" height="720" loading="lazy" decoding="async"/><span className="piece-tag">{d.pieces} peças</span><button className="quick-add" onClick={()=>add(i)} aria-label={`Adicionar ${d.name} à sacola`}><Plus size={20}/></button></div><div className="dish-info"><h3>{d.name}</h3><span>{money(d.price)}</span></div><p>{d.detail}</p></article>)}</div></section>
    <section id="filosofia" className="philosophy"><div className="philosophy-inner wrap"><div className="philosophy-art"><span className="philosophy-monogram" aria-hidden="true">A</span><div className="art-circle"/>{images[2]?<img src={images[2]} alt="Seleção de sushi AYORUME, vista em perspectiva" width="720" height="600" loading="lazy"/>:<FallbackArt/>}<span className="art-note">FEITO COM ALMA<br/><small>DE CORAÇÃO, PARA A MESA.</small></span></div><div className="philosophy-copy"><div className="eyebrow">02 — O NOSSO RITUAL</div><h2>O essencial<br/>se sente.<br/><em>Não se explica.</em></h2><p>Na AYORUME, imaginamos a mesa como um ponto de encontro. Entre o cuidado japonês e a liberdade de criar. Entre quem prepara e quem prova.</p><p>Um bom sushi pede presença. Por isso, nosso convite é simples: escolha seu prato, encontre sua companhia e aproveite cada pedaço.</p><a className="light-link" href="#menu">Encontre o seu ritual <ArrowUpRight size={19}/></a></div></div></section>
