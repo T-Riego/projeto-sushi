@@ -46,6 +46,8 @@ export interface MenuItem {
   tags: DietaryTag[]
   allergens: Allergen[]
   available: boolean
+  badge?: string
+  featured?: boolean
   optionGroups?: ProductOptionGroup[]
 }
 

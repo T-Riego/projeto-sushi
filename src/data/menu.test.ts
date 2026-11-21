@@ -3,6 +3,7 @@ import { describe, expect, it } from 'vitest'
 import { heroSelections } from './heroSelections'
 import { menuCategories, menuItems } from './menu'
 import { restaurant } from './restaurant'
+import type { MenuItem } from '../types/menu'
 
 const expectedProducts = {
   'sunomono-ayorume': 26,
@@ -105,6 +106,45 @@ describe('menu AYORUME', () => {
     for (const id of ['cha-citrico', 'soda-frutas-amarelas', 'horizonte-tonica']) {
       expect(find(id)?.optionGroups?.[0].id, id).toBe('gelo')
     }
+  })
+
+  it('cobra os extras de rolls e combinados conforme a especificação', () => {
+    const extras = menuItems
+      .find(({ id }) => id === 'box-signature')
+      ?.optionGroups?.find(({ id }) => id === 'extras')
+
+    expect(extras?.options).toEqual([
+      { id: 'shoyu-extra', label: 'Shoyu da casa', priceDelta: 3 },
+      { id: 'gengibre-extra', label: 'Gengibre em conserva', priceDelta: 4 },
+      { id: 'wasabi-extra', label: 'Wasabi', priceDelta: 3 },
+    ])
+  })
+
+  it('mantém nomes e porções operacionais aprovados', () => {
+    const summary = Object.fromEntries(
+      menuItems.map(({ id, name, portionLabel }) => [id, { name, portionLabel }]),
+    )
+
+    expect(summary['guioza-legumes'].portionLabel).toBe('6 unidades')
+    expect(menuItems.find(({ id }) => id === 'guioza-legumes')?.alt).toContain('Seis guiozas')
+    expect(summary['sashimi-chef'].portionLabel).toBe('8 cortes')
+    expect(summary['cha-citrico']).toEqual({
+      name: 'Chá cítrico da casa',
+      portionLabel: 'Copo · 300 ml',
+    })
+  })
+
+  it('aceita metadados editoriais opcionais no produto', () => {
+    const editorialItem: MenuItem = {
+      ...menuItems[0],
+      badge: 'Escolha da casa',
+      featured: true,
+    }
+
+    expect(editorialItem).toMatchObject({
+      badge: 'Escolha da casa',
+      featured: true,
+    })
   })
 
   it('descreve a unidade fictícia e sua operação semanal', () => {
