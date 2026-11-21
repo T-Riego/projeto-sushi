@@ -59,6 +59,21 @@ describe('useCart', () => {
     expect(result.current.lines[0].quantity).toBe(99)
   })
 
+  it('ignora deltas não finitos sem invalidar estado ou persistência', () => {
+    const { result } = renderHook(() => useCart())
+    const expected = createCartLine('garden-roll', [], 3)
+
+    act(() => result.current.addLine('garden-roll', [], 3))
+
+    act(() => result.current.changeQuantity(expected.key, Number.NaN))
+    expect(result.current.lines).toEqual([expected])
+    expect(readCart()).toEqual([expected])
+
+    act(() => result.current.changeQuantity(expected.key, Number.POSITIVE_INFINITY))
+    expect(result.current.lines).toEqual([expected])
+    expect(readCart()).toEqual([expected])
+  })
+
   it('altera quantidades, remove ao chegar a zero e remove por chave', () => {
     const { result } = renderHook(() => useCart())
 

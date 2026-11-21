@@ -39,6 +39,10 @@ export function useCart() {
   )
 
   const changeQuantity = useCallback((key: string, delta: number) => {
+    if (!Number.isFinite(delta)) {
+      return
+    }
+
     setLines((current) =>
       current.flatMap((line) => {
         if (line.key !== key) {

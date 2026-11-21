@@ -45,6 +45,29 @@ describe('filterMenuItems', () => {
     expect(result.map(({ id }) => id)).toEqual(['garden-roll'])
   })
 
+  it('exige todos os tags selecionados sem depender do filtro de alergênicos', () => {
+    const items = [
+      {
+        ...menuItems[0],
+        tags: ['vegetariano'],
+        allergens: [],
+      },
+      {
+        ...menuItems[1],
+        tags: ['vegetariano', 'sem-cru'],
+        allergens: [],
+      },
+    ] satisfies readonly MenuItem[]
+
+    const result = filterMenuItems(items, {
+      ...defaultFilters,
+      tags: ['vegetariano', 'sem-cru'],
+      avoidAllergens: [],
+    })
+
+    expect(result.map(({ id }) => id)).toEqual(['edamame-citrico'])
+  })
+
   it('retorna somente itens em destaque quando solicitado', () => {
     const items = [
       { ...menuItems[0], featured: false },
