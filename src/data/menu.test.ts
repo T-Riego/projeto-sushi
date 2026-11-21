@@ -2,7 +2,7 @@ import { describe, expect, expectTypeOf, it } from 'vitest'
 
 import { heroSelections, type HeroSelection } from './heroSelections'
 import { menuCategories, menuItems } from './menu'
-import { restaurant } from './restaurant'
+import { restaurant, type OpeningHours, type Restaurant } from './restaurant'
 import type { CheckoutDraft, CheckoutSchedule } from '../types/flows'
 import type { CartLine, MenuItem, MenuItemId, ProductOptionGroup } from '../types/menu'
 
@@ -11,6 +11,18 @@ type IsStrictReadonlyArray<T> = T extends readonly unknown[]
     ? false
     : true
   : false
+
+type IfEquals<X, Y, Then = X, Else = never> =
+  (<T>() => T extends X ? 1 : 2) extends
+  (<T>() => T extends Y ? 1 : 2) ? Then : Else
+
+type WritableKeys<T> = {
+  [Key in keyof T]-?: IfEquals<
+    { [Current in Key]: T[Key] },
+    { -readonly [Current in Key]: T[Key] },
+    Key
+  >
+}[keyof T]
 
 const expectedProducts = {
   'sunomono-ayorume': 26,
@@ -215,5 +227,21 @@ describe('menu AYORUME', () => {
       { day: 'sábado', opens: '18:00', closes: '23:30' },
       { day: 'domingo', opens: '12:00', closes: '21:30' },
     ])
+  })
+
+  it('expõe a unidade e seus horários como dados readonly', () => {
+    expectTypeOf<WritableKeys<Restaurant>>().toEqualTypeOf<never>()
+    expectTypeOf<
+      WritableKeys<Extract<OpeningHours, { closed: true }>>
+    >().toEqualTypeOf<never>()
+    expectTypeOf<
+      WritableKeys<Extract<OpeningHours, { opens: string }>>
+    >().toEqualTypeOf<never>()
+    expectTypeOf<
+      IsStrictReadonlyArray<Restaurant['deliveryNeighborhoods']>
+    >().toEqualTypeOf<true>()
+    expectTypeOf<
+      IsStrictReadonlyArray<Restaurant['openingHours']>
+    >().toEqualTypeOf<true>()
   })
 })

@@ -134,16 +134,23 @@ Tipos obrigatórios:
 export type SceneIndex = 0 | 1 | 2
 export type DietaryTag = 'vegetariano' | 'sem-cru' | 'cru' | 'picante'
 export type Allergen = 'gluten' | 'crustaceos' | 'peixe' | 'soja' | 'gergelim' | 'leite' | 'castanhas'
+export type MenuItemId =
+  | 'sunomono-ayorume' | 'edamame-citrico' | 'guioza-legumes' | 'tataki-salmao'
+  | 'dupla-salmao' | 'dupla-atum' | 'dupla-camarao' | 'sashimi-chef'
+  | 'roll-ayorume' | 'salmao-cebolinha' | 'atum-picante' | 'camarao-crocante' | 'garden-roll'
+  | 'box-signature' | 'garden-box' | 'salmao-box' | 'garden-para-dois' | 'experiencia-ayorume'
+  | 'trio-mochi' | 'chocolate-gergelim-caramelo' | 'cheesecake-yuzu'
+  | 'cha-citrico' | 'soda-frutas-amarelas' | 'horizonte-tonica'
 export type ProductOption = { id: string; label: string; priceDelta: number }
 export type ProductOptionGroup = { id: string; label: string; required?: boolean; options: ProductOption[] }
 export type MenuItem = {
-  id: string; name: string; categoryId: string; description: string; price: number;
+  id: MenuItemId; name: string; categoryId: string; description: string; price: number;
   image: string; alt: string; portionLabel: string; ingredients: string[];
   tags: DietaryTag[]; allergens: Allergen[]; badge?: string; featured?: boolean;
   available: boolean; optionGroups?: ProductOptionGroup[];
 }
 export type MenuCategory = { id: string; label: string }
-export type CartLine = { key: string; productId: string; quantity: number; optionIds: string[] }
+export type CartLine = { key: string; productId: MenuItemId; quantity: number; optionIds: string[] }
 ```
 
 Criar os 24 IDs e preços exatamente nesta ordem:
@@ -258,7 +265,7 @@ Expected: FAIL por módulos ausentes.
 
 ```ts
 export const CART_STORAGE_KEY = 'ayorume-cart-v2'
-export function createCartLine(productId: string, optionIds: string[], quantity = 1): CartLine
+export function createCartLine(productId: MenuItemId, optionIds: string[], quantity = 1): CartLine
 export function readCart(storage?: Storage): CartLine[]
 export function writeCart(lines: CartLine[], storage?: Storage): void
 export function getLineUnitPrice(line: CartLine, items: MenuItem[]): number
@@ -436,8 +443,8 @@ git commit -m "feat: build AYORUME digital menu"
 - [ ] **Step 1: Criar testes RED das regras de checkout**
 
 ```ts
-expect(validateCheckout({ mode: 'pickup', contact: validContact, schedule: 'asap' })).toEqual({})
-expect(validateCheckout({ mode: 'delivery', contact: validContact, schedule: 'asap', neighborhood: '' }))
+expect(validateCheckout({ mode: 'pickup', contact: validContact, schedule: { kind: 'asap' } })).toEqual({})
+expect(validateCheckout({ mode: 'delivery', contact: validContact, schedule: { kind: 'asap' }, neighborhood: '' }))
   .toMatchObject({ neighborhood: expect.any(String) })
 expect(isDeliveryNeighborhood('Savassi')).toBe(true)
 expect(isDeliveryNeighborhood('Outro bairro')).toBe(false)

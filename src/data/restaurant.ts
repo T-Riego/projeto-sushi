@@ -8,21 +8,21 @@ export type Weekday =
   | 'domingo'
 
 export type OpeningHours =
-  | { day: Weekday; closed: true }
-  | { day: Weekday; opens: string; closes: string }
+  | { readonly day: Weekday; readonly closed: true }
+  | { readonly day: Weekday; readonly opens: string; readonly closes: string }
 
 export interface Restaurant {
-  name: string
-  address: string
-  fictional: boolean
-  timezone: string
-  deliveryNeighborhoods: string[]
-  reservationWindowDays: number
-  maxPartySize: number
-  openingHours: OpeningHours[]
+  readonly name: string
+  readonly address: string
+  readonly fictional: boolean
+  readonly timezone: string
+  readonly deliveryNeighborhoods: readonly string[]
+  readonly reservationWindowDays: number
+  readonly maxPartySize: number
+  readonly openingHours: readonly OpeningHours[]
 }
 
-export const restaurant: Restaurant = {
+export const restaurant = {
   name: 'AYORUME Savassi',
   address: 'Alameda do Horizonte, 118 — Savassi, Belo Horizonte — MG',
   fictional: true,
@@ -47,4 +47,4 @@ export const restaurant: Restaurant = {
     { day: 'sábado', opens: '18:00', closes: '23:30' },
     { day: 'domingo', opens: '12:00', closes: '21:30' },
   ],
-}
+} as const satisfies Restaurant
