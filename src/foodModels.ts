@@ -17,7 +17,7 @@ export function createSushiModels(renderer: THREE.WebGLRenderer) {
   manager.onLoad = () => resolveReady();
   const loader = new THREE.TextureLoader(manager);
   function ingredient(name: string, roughness: number, bumpScale: number) {
-    const map = loader.load('/assets/ingredients/' + name + '.jpg');
+    const map = loader.load(`${import.meta.env.BASE_URL}assets/ingredients/${name}.jpg`);
     map.colorSpace = THREE.SRGBColorSpace;
     map.wrapS = map.wrapT = THREE.RepeatWrapping;
     map.anisotropy = Math.min(renderer.capabilities.getMaxAnisotropy(), 8);
