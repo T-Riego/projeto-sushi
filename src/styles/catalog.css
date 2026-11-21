@@ -153,7 +153,7 @@
 .catalog-filter-fieldset legend {
   margin-bottom: 8px;
   color: var(--muted);
-  font-size: 11px;
+  font-size: 12px;
   font-weight: 600;
   letter-spacing: 0.06em;
   text-transform: uppercase;
@@ -288,7 +288,7 @@
   border-radius: 3px;
   color: var(--paper);
   background: var(--ink);
-  font-size: 10px;
+  font-size: 12px;
   font-weight: 600;
   letter-spacing: 0.04em;
   text-transform: uppercase;
@@ -308,7 +308,7 @@
 
 .catalog-card-category {
   color: var(--red);
-  font-size: 10px;
+  font-size: 12px;
   font-weight: 650;
   letter-spacing: 0.1em;
   text-transform: uppercase;
@@ -346,7 +346,7 @@
 .catalog-card-portion {
   margin-top: 9px;
   color: var(--ink);
-  font-size: 11px;
+  font-size: 12px;
 }
 
 .catalog-card-actions {
@@ -456,7 +456,7 @@
 .product-kicker {
   display: block;
   color: var(--red);
-  font-size: 10px;
+  font-size: 12px;
   font-weight: 650;
   letter-spacing: 0.12em;
   text-transform: uppercase;
@@ -517,7 +517,7 @@
   border-radius: 3px;
   color: var(--paper);
   background: var(--red);
-  font-size: 11px;
+  font-size: 12px;
   font-weight: 650;
   letter-spacing: 0.08em;
   text-transform: uppercase;
@@ -590,7 +590,7 @@
 
 .product-option-group legend span {
   color: var(--muted);
-  font-size: 10px;
+  font-size: 12px;
   font-weight: 500;
   letter-spacing: 0.07em;
   text-transform: uppercase;
@@ -634,7 +634,7 @@
 
 .product-option small {
   color: var(--muted);
-  font-size: 11px;
+  font-size: 12px;
 }
 
 .product-quantity-row {
@@ -656,7 +656,7 @@
   display: block;
   margin-top: 3px;
   color: var(--muted);
-  font-size: 11px;
+  font-size: 12px;
 }
 
 .product-quantity-control {
@@ -708,7 +708,7 @@
   border-left: 3px solid var(--red);
   color: var(--muted);
   background: color-mix(in srgb, var(--line) 30%, var(--paper));
-  font-size: 11px;
+  font-size: 12px;
   line-height: 1.6;
 }
 
@@ -734,7 +734,7 @@
 
 .product-footer > div span {
   color: var(--muted);
-  font-size: 10px;
+  font-size: 12px;
   letter-spacing: 0.08em;
   text-transform: uppercase;
 }
@@ -848,7 +848,7 @@
 
   .catalog-card-badge {
     padding: 4px 5px;
-    font-size: 8px;
+    font-size: 12px;
   }
 
   .catalog-card-body {
@@ -877,11 +877,11 @@
     overflow: hidden;
     -webkit-box-orient: vertical;
     -webkit-line-clamp: 2;
-    font-size: 11px;
+    font-size: 12px;
   }
 
   .catalog-card-portion {
-    font-size: 10px;
+    font-size: 12px;
   }
 
   .catalog-card-actions {
@@ -889,7 +889,7 @@
   }
 
   .catalog-details-button {
-    font-size: 11px;
+    font-size: 12px;
   }
 
   .product-dialog {

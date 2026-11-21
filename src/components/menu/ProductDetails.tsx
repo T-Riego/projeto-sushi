@@ -229,7 +229,7 @@ export function ProductDetails({
                         />
                         <span>{option.label}</span>
                         {option.priceDelta > 0 ? (
-                          <small aria-hidden="true">
+                          <small>
                             + {currencyFormatter.format(option.priceDelta)}
                           </small>
                         ) : null}

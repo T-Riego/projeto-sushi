@@ -53,13 +53,11 @@ export function MenuFilters({
   onClear,
 }: MenuFiltersProps) {
   const selectCategory = (nextCategoryId: 'todos' | MenuCategoryId) => {
-    onFeaturedOnlyChange(false)
     onCategoryChange(nextCategoryId)
   }
 
   const selectFeatured = () => {
-    onCategoryChange('todos')
-    onFeaturedOnlyChange(true)
+    onFeaturedOnlyChange(!featuredOnly)
   }
 
   return (
@@ -83,7 +81,7 @@ export function MenuFilters({
         <button
           type="button"
           className="catalog-filter-chip"
-          aria-pressed={categoryId === 'todos' && !featuredOnly}
+          aria-pressed={categoryId === 'todos'}
           onClick={() => selectCategory('todos')}
         >
           Todos
@@ -100,7 +98,7 @@ export function MenuFilters({
           <button
             type="button"
             className="catalog-filter-chip"
-            aria-pressed={categoryId === category.id && !featuredOnly}
+            aria-pressed={categoryId === category.id}
             onClick={() => selectCategory(category.id)}
             key={category.id}
           >

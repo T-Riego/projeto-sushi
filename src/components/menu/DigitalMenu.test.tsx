@@ -1,8 +1,16 @@
+import { readFileSync } from 'node:fs'
+import { resolve } from 'node:path'
+
 import { fireEvent, render, screen, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { describe, expect, it, vi } from 'vitest'
 
 import { DigitalMenu } from './DigitalMenu'
+
+const catalogCss = readFileSync(
+  resolve(process.cwd(), 'src/styles/catalog.css'),
+  'utf8',
+)
 
 function renderMenu() {
   const onAddLine = vi.fn()
@@ -63,6 +71,35 @@ describe('DigitalMenu', () => {
     expect(screen.getByRole('status')).toHaveTextContent('3 itens encontrados')
   })
 
+  it('combina categoria e Destaques como filtros independentes', async () => {
+    const user = userEvent.setup()
+    renderMenu()
+
+    const combinados = screen.getByRole('button', { name: 'Combinados' })
+    const rolls = screen.getByRole('button', { name: 'Rolls' })
+    const destaques = screen.getByRole('button', { name: 'Destaques' })
+
+    await user.click(combinados)
+    expect(combinados).toHaveAttribute('aria-pressed', 'true')
+    expect(screen.getAllByRole('article')).toHaveLength(5)
+
+    await user.click(destaques)
+    expect(combinados).toHaveAttribute('aria-pressed', 'true')
+    expect(destaques).toHaveAttribute('aria-pressed', 'true')
+    expect(screen.getAllByRole('article')).toHaveLength(3)
+
+    await user.click(destaques)
+    expect(combinados).toHaveAttribute('aria-pressed', 'true')
+    expect(destaques).toHaveAttribute('aria-pressed', 'false')
+    expect(screen.getAllByRole('article')).toHaveLength(5)
+
+    await user.click(destaques)
+    await user.click(rolls)
+    expect(rolls).toHaveAttribute('aria-pressed', 'true')
+    expect(destaques).toHaveAttribute('aria-pressed', 'true')
+    expect(screen.queryAllByRole('article')).toHaveLength(0)
+  })
+
   it('mostra o estado vazio para Sobremesas picantes e limpa todos os filtros', async () => {
     const user = userEvent.setup()
     renderMenu()
@@ -98,7 +135,11 @@ describe('DigitalMenu', () => {
     await user.click(tradicional)
     expect(suave).not.toBeChecked()
     expect(tradicional).toBeChecked()
-    await user.click(within(dialog).getByRole('checkbox', { name: 'Wasabi' }))
+    await user.click(
+      within(dialog).getByRole('checkbox', {
+        name: /Wasabi\s*\+\s*R\$\s*3,00/,
+      }),
+    )
     await user.click(
       within(dialog).getByRole('button', { name: 'Aumentar quantidade' }),
     )
@@ -220,5 +261,28 @@ describe('DigitalMenu', () => {
 
     expect(fallbackSource).toMatch(/\/assets\/sushi-0\.png$/)
     expect(image.src).toMatch(/\/assets\/teste-sem-fallback\.png$/)
+  })
+
+  it('mantém todo texto funcional em pelo menos 12px', () => {
+    const decorativeSelectors = [
+      '.catalog-eyebrow',
+      '.catalog-editorial-jp',
+    ]
+    const undersizedFunctionalText = [
+      ...catalogCss.matchAll(/([^{}]+)\{([^{}]*)\}/g),
+    ].flatMap(([, selectorSource, declarations]) => {
+      const selector = selectorSource.trim()
+
+      if (decorativeSelectors.some((allowed) => selector.includes(allowed))) {
+        return []
+      }
+
+      return [...declarations.matchAll(/font-size:\s*(\d+(?:\.\d+)?)px/g)]
+        .map(([, size]) => Number(size))
+        .filter((size) => size < 12)
+        .map((size) => `${selector} = ${size}px`)
+    })
+
+    expect(undersizedFunctionalText).toEqual([])
   })
 })
