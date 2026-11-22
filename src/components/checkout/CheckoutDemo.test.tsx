@@ -36,12 +36,14 @@ type RenderCheckoutOptions = {
   open?: boolean
   onClose?: () => void
   onComplete?: () => void
+  onReturnToMenu?: () => void
 }
 
 function renderCheckout({
   open = true,
   onClose = vi.fn(),
   onComplete = vi.fn(),
+  onReturnToMenu,
 }: RenderCheckoutOptions = {}) {
   const view = render(
     <CheckoutDemo
@@ -50,6 +52,7 @@ function renderCheckout({
       total={checkoutTotal}
       onClose={onClose}
       onComplete={onComplete}
+      onReturnToMenu={onReturnToMenu}
     />,
   )
 
@@ -63,6 +66,7 @@ function renderCheckout({
           total={checkoutTotal}
           onClose={onClose}
           onComplete={onComplete}
+          onReturnToMenu={onReturnToMenu}
         />,
       )
     },
@@ -364,7 +368,8 @@ describe('CheckoutDemo', () => {
   it('não mantém PII visível na confirmação e reabre com os campos vazios', async () => {
     const user = userEvent.setup()
     const onClose = vi.fn()
-    const view = renderCheckout({ onClose })
+    const onReturnToMenu = vi.fn()
+    const view = renderCheckout({ onClose, onReturnToMenu })
 
     await user.click(screen.getByRole('radio', { name: 'Entrega' }))
     await user.click(screen.getByRole('button', { name: 'Avançar' }))
@@ -401,7 +406,8 @@ describe('CheckoutDemo', () => {
     expect(screen.queryByText('Observação sigilosa')).not.toBeInTheDocument()
 
     await user.click(screen.getByRole('button', { name: 'Voltar ao cardápio' }))
-    expect(onClose).toHaveBeenCalledTimes(1)
+    expect(onReturnToMenu).toHaveBeenCalledTimes(1)
+    expect(onClose).not.toHaveBeenCalled()
     view.rerenderCheckout(false)
     view.rerenderCheckout(true)
     await user.click(screen.getByRole('radio', { name: 'Entrega' }))

@@ -76,12 +76,38 @@ describe('App', () => {
     })
   })
 
+  it('fecha a sacola vazia, rola o menu e foca o título do catálogo', async () => {
+    const user = userEvent.setup()
+    render(<App />)
+    const menu = document.getElementById('menu')
+    const catalogTitle = document.getElementById('catalog-title')
+
+    expect(menu).not.toBeNull()
+    expect(catalogTitle).not.toBeNull()
+    const scrollIntoView = vi.mocked(menu!.scrollIntoView)
+    scrollIntoView.mockClear()
+
+    await user.click(
+      screen.getByRole('button', { name: /Abrir sacola, 0 itens/i }),
+    )
+    await user.click(
+      screen.getByRole('button', { name: 'Explorar o cardápio' }),
+    )
+
+    await waitFor(() => expect(catalogTitle).toHaveFocus())
+    expect(scrollIntoView).toHaveBeenCalledWith({
+      behavior: 'smooth',
+      block: 'start',
+    })
+  })
+
   it('fecha o checkout sem reabrir o drawer e devolve o foco à sacola', async () => {
     const user = userEvent.setup()
     render(<App />)
     const bagButton = screen.getByRole('button', {
       name: /Abrir sacola, 0 itens/i,
     })
+    const bagFocus = vi.spyOn(bagButton, 'focus')
 
     await user.click(
       screen.getByRole('button', { name: 'Adicionar seleção do hero' }),
@@ -92,6 +118,8 @@ describe('App', () => {
     const checkout = screen.getByRole('dialog', {
       name: 'Checkout demonstrativo',
     })
+    expect(bagButton).not.toHaveFocus()
+    expect(bagFocus).not.toHaveBeenCalled()
     await user.click(
       within(checkout).getByRole('button', { name: 'Fechar checkout' }),
     )
@@ -103,5 +131,54 @@ describe('App', () => {
     expect(
       screen.queryByRole('dialog', { name: 'Checkout demonstrativo' }),
     ).not.toBeInTheDocument()
+  })
+
+  it('conclui a simulação e volta ao cardápio com rolagem e foco', async () => {
+    const user = userEvent.setup()
+    render(<App />)
+    const menu = document.getElementById('menu')
+    const catalogTitle = document.getElementById('catalog-title')
+
+    expect(menu).not.toBeNull()
+    expect(catalogTitle).not.toBeNull()
+    const scrollIntoView = vi.mocked(menu!.scrollIntoView)
+    scrollIntoView.mockClear()
+
+    await user.click(
+      screen.getByRole('button', { name: 'Adicionar seleção do hero' }),
+    )
+    await user.click(
+      screen.getByRole('button', { name: 'Continuar para checkout' }),
+    )
+    const checkout = screen.getByRole('dialog', {
+      name: 'Checkout demonstrativo',
+    })
+    await user.click(within(checkout).getByRole('radio', { name: 'Retirada' }))
+    await user.click(within(checkout).getByRole('button', { name: 'Avançar' }))
+    await user.type(within(checkout).getByRole('textbox', { name: 'Nome' }), 'Ana')
+    await user.type(
+      within(checkout).getByRole('textbox', { name: 'Telefone' }),
+      '(31) 99999-1234',
+    )
+    await user.click(within(checkout).getByRole('radio', { name: 'Pix' }))
+    await user.click(within(checkout).getByRole('button', { name: 'Avançar' }))
+    await user.click(
+      within(checkout).getByRole('button', {
+        name: 'Confirmar pedido simulado',
+      }),
+    )
+
+    expect(
+      screen.queryByText('Checkout demonstrativo concluído. A sacola foi limpa.'),
+    ).not.toBeInTheDocument()
+    await user.click(
+      within(checkout).getByRole('button', { name: 'Voltar ao cardápio' }),
+    )
+
+    await waitFor(() => expect(catalogTitle).toHaveFocus())
+    expect(scrollIntoView).toHaveBeenCalledWith({
+      behavior: 'smooth',
+      block: 'start',
+    })
   })
 })

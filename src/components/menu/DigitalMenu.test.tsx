@@ -43,8 +43,12 @@ describe('DigitalMenu', () => {
     const menu = screen.getByRole('region', {
       name: /A cada escolha, uma nova descoberta/i,
     })
+    const catalogTitle = within(menu).getByRole('heading', {
+      name: /A cada escolha, uma nova descoberta/i,
+    })
 
     expect(within(menu).getAllByRole('article')).toHaveLength(24)
+    expect(catalogTitle).toHaveAttribute('tabindex', '-1')
     expect(screen.getByRole('status')).toHaveTextContent('24 itens encontrados')
   })
 

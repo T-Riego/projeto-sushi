@@ -8,7 +8,10 @@ import {
   X,
 } from 'lucide-react'
 
-import { CartDrawer } from './components/cart/CartDrawer'
+import {
+  CartDrawer,
+  type CartCloseReason,
+} from './components/cart/CartDrawer'
 import { HeroShowcase } from './components/hero/HeroShowcase'
 import { DigitalMenu } from './components/menu/DigitalMenu'
 import { menuItems } from './data/menu'
@@ -36,7 +39,10 @@ export default function App() {
     [0, 1, 2].map((index) => assetPath(`assets/sushi-${index}.png`)),
   )
   const [cartOpen, setCartOpen] = useState(false)
-  const [bagFocusRequest, setBagFocusRequest] = useState(0)
+  const [focusRequest, setFocusRequest] = useState<{
+    id: number
+    target: Exclude<CartCloseReason, 'checkout'>
+  } | null>(null)
   const [navOpen, setNavOpen] = useState(false)
   const bagButtonRef = useRef<HTMLButtonElement>(null)
   const {
@@ -57,24 +63,46 @@ export default function App() {
     setCartOpen(true)
   }
 
-  const closeCart = () => {
+  const closeCart = (reason: CartCloseReason) => {
     setCartOpen(false)
-    setBagFocusRequest((request) => request + 1)
+    if (reason !== 'checkout') {
+      setFocusRequest((current) => ({
+        id: (current?.id ?? 0) + 1,
+        target: reason,
+      }))
+    }
   }
 
   useEffect(() => {
-    if (bagFocusRequest === 0) {
+    if (!focusRequest) {
       return
     }
 
     const focusTimer = window.setTimeout(() => {
-      if (!document.querySelector('.checkout-dialog[open]')) {
-        bagButtonRef.current?.focus({ preventScroll: true })
+      if (
+        document.querySelector(
+          '.cart-drawer-dialog[open], .checkout-dialog[open]',
+        )
+      ) {
+        return
       }
+
+      if (focusRequest.target === 'menu') {
+        document.getElementById('menu')?.scrollIntoView({
+          behavior: 'smooth',
+          block: 'start',
+        })
+        document
+          .getElementById('catalog-title')
+          ?.focus({ preventScroll: true })
+        return
+      }
+
+      bagButtonRef.current?.focus({ preventScroll: true })
     }, 0)
 
     return () => window.clearTimeout(focusTimer)
-  }, [bagFocusRequest])
+  }, [focusRequest])
 
   const bagItemLabel = `${count} ${count === 1 ? 'item' : 'itens'}`
 
@@ -229,7 +257,6 @@ export default function App() {
         onChangeQuantity={changeQuantity}
         onRemoveLine={removeLine}
         onClearCart={clearCart}
-        onNotify={notify}
       />
 
       <div

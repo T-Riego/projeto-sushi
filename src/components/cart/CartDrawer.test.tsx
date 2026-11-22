@@ -30,7 +30,6 @@ function renderDrawer(
     onChangeQuantity: vi.fn(),
     onRemoveLine: vi.fn(),
     onClearCart: vi.fn(),
-    onNotify: vi.fn(),
     ...overrides,
   }
 
@@ -98,13 +97,8 @@ describe('CartDrawer', () => {
     expect(props.onRemoveLine).toHaveBeenCalledWith(signatureLine.key)
   })
 
-  it('fecha o estado vazio e leva ao cardápio', async () => {
+  it('fecha o estado vazio solicitando retorno ao cardápio', async () => {
     const user = userEvent.setup()
-    const menuAnchor = document.createElement('section')
-    menuAnchor.id = 'menu'
-    menuAnchor.dataset.testid = 'menu-test-anchor'
-    document.body.append(menuAnchor)
-    const scrollIntoView = vi.mocked(menuAnchor.scrollIntoView)
     const { props } = renderDrawer({ lines: [], count: 0, total: 0 })
 
     await user.click(
@@ -112,10 +106,7 @@ describe('CartDrawer', () => {
     )
 
     expect(props.onClose).toHaveBeenCalledOnce()
-    expect(scrollIntoView).toHaveBeenCalledWith({
-      behavior: 'smooth',
-      block: 'start',
-    })
+    expect(props.onClose).toHaveBeenCalledWith('menu')
     expect(
       screen.queryByRole('dialog', { name: /Sua sacola/i }),
     ).not.toBeInTheDocument()
@@ -130,6 +121,7 @@ describe('CartDrawer', () => {
     )
 
     expect(props.onClose).toHaveBeenCalledOnce()
+    expect(props.onClose).toHaveBeenCalledWith('checkout')
     expect(
       screen.queryByRole('dialog', { name: /Sua sacola/i }),
     ).not.toBeInTheDocument()
@@ -159,13 +151,19 @@ describe('CartDrawer', () => {
     )
 
     await waitFor(() => expect(props.onClearCart).toHaveBeenCalledOnce())
-    expect(props.onNotify).toHaveBeenCalledOnce()
     expect(
       within(checkout).getByRole('heading', {
         name: 'Nenhum pedido foi realizado',
       }),
     ).toBeInTheDocument()
     expect(within(checkout).getByText(/R\$\s*262,00/)).toBeInTheDocument()
+
+    await user.click(
+      within(checkout).getByRole('button', { name: 'Voltar ao cardápio' }),
+    )
+
+    expect(props.onClose).toHaveBeenCalledTimes(2)
+    expect(props.onClose).toHaveBeenNthCalledWith(2, 'menu')
   })
 
   it('notifica o fechamento uma única vez por Escape e backdrop', () => {
@@ -176,6 +174,7 @@ describe('CartDrawer', () => {
     fireEvent(escapeDialog, new Event('cancel', { cancelable: true }))
 
     expect(first.props.onClose).toHaveBeenCalledOnce()
+    expect(first.props.onClose).toHaveBeenCalledWith('bag')
     first.unmount()
 
     const second = renderDrawer()
@@ -184,6 +183,7 @@ describe('CartDrawer', () => {
     fireEvent.click(backdropDialog)
 
     expect(second.props.onClose).toHaveBeenCalledOnce()
+    expect(second.props.onClose).toHaveBeenCalledWith('bag')
   })
 
   it('anuncia a remoção e move o foco ao remover a última linha', async () => {

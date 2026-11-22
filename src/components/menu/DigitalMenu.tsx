@@ -118,7 +118,7 @@ export function DigitalMenu({ onAddLine, onNotify }: DigitalMenuProps) {
       <header className="catalog-heading">
         <div>
           <p className="catalog-eyebrow">01 — ENCONTRE O SEU FAVORITO</p>
-          <h2 id="catalog-title">
+          <h2 id="catalog-title" tabIndex={-1}>
             A cada escolha,
             <br /> uma nova <em>descoberta.</em>
           </h2>

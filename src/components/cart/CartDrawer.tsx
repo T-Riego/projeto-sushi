@@ -17,16 +17,17 @@ import {
   handleCatalogImageError,
 } from '../menu/MenuCard'
 
+export type CartCloseReason = 'bag' | 'menu' | 'checkout'
+
 export type CartDrawerProps = {
   open: boolean
   lines: readonly CartLine[]
   count: number
   total: number
-  onClose: () => void
+  onClose: (reason: CartCloseReason) => void
   onChangeQuantity: (key: string, delta: number) => void
   onRemoveLine: (key: string) => void
   onClearCart: () => void
-  onNotify?: (message: string) => void
 }
 
 type CheckoutSnapshot = {
@@ -53,7 +54,6 @@ export function CartDrawer({
   onChangeQuantity,
   onRemoveLine,
   onClearCart,
-  onNotify,
 }: CartDrawerProps) {
   const dialogRef = useRef<HTMLDialogElement>(null)
   const closeButtonRef = useRef<HTMLButtonElement>(null)
@@ -138,7 +138,7 @@ export function CartDrawer({
     [lines],
   )
 
-  const requestClose = () => {
+  const requestClose = (reason: CartCloseReason = 'bag') => {
     if (closeNotifiedRef.current) {
       return
     }
@@ -147,7 +147,7 @@ export function CartDrawer({
     if (dialogRef.current?.open) {
       dialogRef.current.close()
     }
-    onClose()
+    onClose(reason)
   }
 
   useEffect(() => {
@@ -189,11 +189,7 @@ export function CartDrawer({
   }, [resolvedLines])
 
   const exploreMenu = () => {
-    requestClose()
-    document.getElementById('menu')?.scrollIntoView({
-      behavior: 'smooth',
-      block: 'start',
-    })
+    requestClose('menu')
   }
 
   const openCheckout = () => {
@@ -205,7 +201,7 @@ export function CartDrawer({
       })),
       total,
     })
-    requestClose()
+    requestClose('checkout')
     setCheckoutOpen(true)
   }
 
@@ -245,7 +241,6 @@ export function CartDrawer({
 
     checkoutCompletedRef.current = true
     onClearCart()
-    onNotify?.('Checkout demonstrativo concluído. A sacola foi limpa.')
   }
 
   return (
@@ -277,7 +272,7 @@ export function CartDrawer({
               className="cart-drawer-close"
               type="button"
               aria-label="Fechar sacola"
-              onClick={requestClose}
+              onClick={() => requestClose()}
             >
               <X aria-hidden="true" size={20} />
             </button>
@@ -428,7 +423,11 @@ export function CartDrawer({
         total={checkoutSnapshot.total}
         onClose={() => {
           setCheckoutOpen(false)
-          onClose()
+          onClose('bag')
+        }}
+        onReturnToMenu={() => {
+          setCheckoutOpen(false)
+          onClose('menu')
         }}
         onComplete={completeCheckout}
       />

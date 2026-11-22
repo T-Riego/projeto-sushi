@@ -26,6 +26,7 @@ export type CheckoutDemoProps = {
   total: number
   onClose: () => void
   onComplete: () => void
+  onReturnToMenu?: () => void
 }
 
 type CheckoutStep = 1 | 2 | 3 | 4
@@ -93,6 +94,7 @@ export function CheckoutDemo({
   total,
   onClose,
   onComplete,
+  onReturnToMenu,
 }: CheckoutDemoProps) {
   const dialogRef = useRef<HTMLDialogElement>(null)
   const closeButtonRef = useRef<HTMLButtonElement>(null)
@@ -258,7 +260,7 @@ export function CheckoutDemo({
     setStep(4)
   }
 
-  const requestClose = () => {
+  const closeWith = (onClosed: () => void) => {
     if (closeNotifiedRef.current) {
       return
     }
@@ -268,8 +270,11 @@ export function CheckoutDemo({
     if (dialogRef.current?.open) {
       dialogRef.current.close()
     }
-    onClose()
+    onClosed()
   }
+
+  const requestClose = () => closeWith(onClose)
+  const requestReturnToMenu = () => closeWith(onReturnToMenu ?? onClose)
 
   const handleSubmit = (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault()
@@ -282,7 +287,7 @@ export function CheckoutDemo({
       completeDemo()
       return
     }
-    requestClose()
+    requestReturnToMenu()
   }
 
   const chooseMode = (nextMode: FulfillmentMode) => {
@@ -922,7 +927,11 @@ export function CheckoutDemo({
           ) : null}
 
           {step === 4 ? (
-            <button className="flow-primary-action" type="submit">
+            <button
+              className="flow-primary-action"
+              type="button"
+              onClick={requestReturnToMenu}
+            >
               Voltar ao cardápio
             </button>
           ) : null}
