@@ -92,6 +92,11 @@ export function CheckoutDemo({
 }: CheckoutDemoProps) {
   const dialogRef = useRef<HTMLDialogElement>(null)
   const closeButtonRef = useRef<HTMLButtonElement>(null)
+  const stepHeadingRef = useRef<HTMLHeadingElement>(null)
+  const errorSummaryRef = useRef<HTMLDivElement>(null)
+  const previousStepRef = useRef<CheckoutStep>(1)
+  const validationAttemptRef = useRef(0)
+  const focusedValidationAttemptRef = useRef(0)
   const closeNotifiedRef = useRef(false)
   const completedRef = useRef(false)
 
@@ -108,6 +113,9 @@ export function CheckoutDemo({
   const [pickupNotice, setPickupNotice] = useState('')
 
   const resetState = () => {
+    previousStepRef.current = 1
+    validationAttemptRef.current = 0
+    focusedValidationAttemptRef.current = 0
     setStep(1)
     setMode(undefined)
     setSchedule({ kind: 'asap' })
@@ -194,6 +202,9 @@ export function CheckoutDemo({
 
   const validateStep = (fields: Set<string>): boolean => {
     const stepErrors = selectErrors(validateCheckout(checkoutDraft()), fields)
+    if (Object.keys(stepErrors).length > 0) {
+      validationAttemptRef.current += 1
+    }
     setErrors(stepErrors)
     return Object.keys(stepErrors).length === 0
   }
@@ -275,6 +286,26 @@ export function CheckoutDemo({
   const reviewSchedule =
     schedule.kind === 'scheduled' ? schedule.value : 'Mais rápido'
 
+  useEffect(() => {
+    if (!open || !dialogRef.current?.open) {
+      return
+    }
+
+    if (
+      errorEntries.length > 0 &&
+      validationAttemptRef.current !== focusedValidationAttemptRef.current
+    ) {
+      focusedValidationAttemptRef.current = validationAttemptRef.current
+      errorSummaryRef.current?.focus()
+      return
+    }
+
+    if (previousStepRef.current !== step) {
+      stepHeadingRef.current?.focus()
+      previousStepRef.current = step
+    }
+  }, [errors, open, step])
+
   return (
     <dialog
       ref={dialogRef}
@@ -321,7 +352,12 @@ export function CheckoutDemo({
 
         <div className="checkout-content">
           {errorEntries.length > 0 ? (
-            <div className="flow-error-summary" role="alert">
+            <div
+              ref={errorSummaryRef}
+              className="flow-error-summary"
+              role="alert"
+              tabIndex={-1}
+            >
               <strong>Revise os campos destacados antes de continuar.</strong>
               <ul>
                 {errorEntries.map(([field, message]) => (
@@ -336,7 +372,13 @@ export function CheckoutDemo({
               <div className="checkout-step-heading">
                 <span>01</span>
                 <div>
-                  <h3 id="checkout-step-one-title">Modalidade e horário</h3>
+                  <h3
+                    ref={stepHeadingRef}
+                    id="checkout-step-one-title"
+                    tabIndex={-1}
+                  >
+                    Modalidade e horário
+                  </h3>
                   <p>Escolha como e quando deseja receber a simulação.</p>
                 </div>
               </div>
@@ -450,7 +492,13 @@ export function CheckoutDemo({
               <div className="checkout-step-heading">
                 <span>02</span>
                 <div>
-                  <h3 id="checkout-step-two-title">Seus dados</h3>
+                  <h3
+                    ref={stepHeadingRef}
+                    id="checkout-step-two-title"
+                    tabIndex={-1}
+                  >
+                    Seus dados
+                  </h3>
                   <p>Usados apenas nesta simulação e descartados ao fechar.</p>
                 </div>
               </div>
@@ -617,8 +665,10 @@ export function CheckoutDemo({
                   </div>
 
                   {address.neighborhood === 'Outro bairro' ? (
-                    <div className="checkout-outside-area" role="status">
-                      <p>Este bairro está fora da área de entrega demonstrativa.</p>
+                    <div className="checkout-outside-area">
+                      <p role="status">
+                        Este bairro está fora da área de entrega demonstrativa.
+                      </p>
                       <button type="button" onClick={choosePickupFromOutsideArea}>
                         Escolher retirada
                       </button>
@@ -692,7 +742,13 @@ export function CheckoutDemo({
               <div className="checkout-step-heading">
                 <span>03</span>
                 <div>
-                  <h3 id="checkout-step-three-title">Revise seu pedido</h3>
+                  <h3
+                    ref={stepHeadingRef}
+                    id="checkout-step-three-title"
+                    tabIndex={-1}
+                  >
+                    Revise seu pedido
+                  </h3>
                   <p>Confira a simulação antes da confirmação final.</p>
                 </div>
               </div>
@@ -778,7 +834,13 @@ export function CheckoutDemo({
             >
               <span className="flow-kicker">Código demonstrativo</span>
               <p className="checkout-order-code">{orderCode}</p>
-              <h3 id="checkout-confirmation-title">Nenhum pedido foi realizado</h3>
+              <h3
+                ref={stepHeadingRef}
+                id="checkout-confirmation-title"
+                tabIndex={-1}
+              >
+                Nenhum pedido foi realizado
+              </h3>
               <p>
                 Esta confirmação existe apenas para demonstrar a experiência do
                 checkout.

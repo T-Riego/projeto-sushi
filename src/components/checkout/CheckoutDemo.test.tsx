@@ -3,7 +3,7 @@ import { resolve } from 'node:path'
 
 import { useState } from 'react'
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import { render, screen, within } from '@testing-library/react'
+import { act, fireEvent, render, screen, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 
 import { createCartLine, getCartTotal } from '../../lib/cart'
@@ -173,11 +173,76 @@ describe('CheckoutDemo', () => {
       'Outro bairro',
     )
 
-    expect(screen.getByText(/fora da área de entrega/i)).toBeInTheDocument()
-    await user.click(screen.getByRole('button', { name: 'Escolher retirada' }))
+    const outsideStatus = screen.getByRole('status')
+    const choosePickupButton = screen.getByRole('button', {
+      name: 'Escolher retirada',
+    })
+    expect(outsideStatus).toHaveTextContent(/fora da área de entrega/i)
+    expect(within(outsideStatus).queryByRole('button')).not.toBeInTheDocument()
+    expect(outsideStatus.nextElementSibling).toBe(choosePickupButton)
+
+    await user.click(choosePickupButton)
 
     expect(screen.queryByRole('textbox', { name: 'Rua ou avenida' })).not.toBeInTheDocument()
     expect(screen.getByText(/retirada selecionada/i)).toBeInTheDocument()
+  })
+
+  it('conclui uma entrega válida até a confirmação demonstrativa', async () => {
+    const user = userEvent.setup()
+    const onComplete = vi.fn()
+    renderCheckout({ onComplete })
+
+    await user.click(screen.getByRole('radio', { name: 'Entrega' }))
+    await user.click(screen.getByRole('button', { name: 'Avançar' }))
+    await completeContactAndPayment(user)
+    await user.type(
+      screen.getByRole('textbox', { name: 'Rua ou avenida' }),
+      'Rua das Acácias',
+    )
+    await user.type(screen.getByRole('textbox', { name: 'Número' }), '120')
+    await user.selectOptions(
+      screen.getByRole('combobox', { name: 'Bairro' }),
+      'Savassi',
+    )
+    await user.click(screen.getByRole('button', { name: 'Avançar' }))
+
+    expect(screen.getByRole('heading', { name: 'Revise seu pedido' })).toBeInTheDocument()
+    expect(screen.getByText(/Rua das Acácias, 120/)).toBeInTheDocument()
+    expect(screen.getByText('Entrega')).toBeInTheDocument()
+
+    await user.click(
+      screen.getByRole('button', { name: 'Confirmar pedido simulado' }),
+    )
+
+    expect(
+      screen.getByRole('heading', { name: 'Nenhum pedido foi realizado' }),
+    ).toBeInTheDocument()
+    expect(screen.getByText('Entrega')).toBeInTheDocument()
+    expect(screen.queryByText(/Rua das Acácias/)).not.toBeInTheDocument()
+    expect(onComplete).toHaveBeenCalledTimes(1)
+  })
+
+  it('confirma apenas uma vez quando o formulário recebe submissão duplicada', async () => {
+    const user = userEvent.setup()
+    const onComplete = vi.fn()
+    renderCheckout({ onComplete })
+
+    await choosePickupAndAdvance(user)
+    await completeContactAndPayment(user)
+    await user.click(screen.getByRole('button', { name: 'Avançar' }))
+
+    const confirmButton = screen.getByRole('button', {
+      name: 'Confirmar pedido simulado',
+    })
+    act(() => {
+      confirmButton.click()
+      confirmButton.click()
+    })
+
+    expect(onComplete).toHaveBeenCalledTimes(1)
+    expect(
+      screen.getByRole('heading', { name: 'Nenhum pedido foi realizado' }),
+    ).toBeInTheDocument()
   })
 
   it('exige horário ao agendar e mantém o erro próximo ao campo', async () => {
@@ -200,6 +265,42 @@ describe('CheckoutDemo', () => {
     await user.click(screen.getByRole('button', { name: 'Avançar' }))
 
     expect(screen.getByRole('heading', { name: 'Seus dados' })).toBeInTheDocument()
+  })
+
+  it('move o foco para o heading da nova etapa após avançar', async () => {
+    const user = userEvent.setup()
+    renderCheckout()
+
+    await choosePickupAndAdvance(user)
+
+    const heading = screen.getByRole('heading', { name: 'Seus dados' })
+    expect(heading).toHaveAttribute('tabindex', '-1')
+    expect(heading).toHaveFocus()
+  })
+
+  it('move o foco para o resumo quando a etapa contém erros', async () => {
+    const user = userEvent.setup()
+    renderCheckout()
+
+    await user.click(screen.getByRole('button', { name: 'Avançar' }))
+
+    const summary = screen.getByRole('alert')
+    expect(summary).toHaveAttribute('tabindex', '-1')
+    expect(summary).toHaveFocus()
+  })
+
+  it('mantém o foco no campo enquanto a pessoa corrige múltiplos erros', async () => {
+    const user = userEvent.setup()
+    renderCheckout()
+
+    await choosePickupAndAdvance(user)
+    await user.click(screen.getByRole('button', { name: 'Avançar' }))
+    const nameInput = screen.getByRole('textbox', { name: 'Nome' })
+
+    await user.type(nameInput, 'Ana')
+
+    expect(nameInput).toHaveValue('Ana')
+    expect(nameInput).toHaveFocus()
   })
 
   it('oferece apenas escolhas textuais de pagamento sem coletar cartão ou documento', async () => {
@@ -252,6 +353,76 @@ describe('CheckoutDemo', () => {
     expect(screen.getByRole('textbox', { name: 'Observação opcional' })).toHaveValue(
       '',
     )
+  })
+
+  it('não mantém PII visível na confirmação e reabre com os campos vazios', async () => {
+    const user = userEvent.setup()
+    const onClose = vi.fn()
+    const view = renderCheckout({ onClose })
+
+    await user.click(screen.getByRole('radio', { name: 'Entrega' }))
+    await user.click(screen.getByRole('button', { name: 'Avançar' }))
+    await user.type(
+      screen.getByRole('textbox', { name: 'Nome' }),
+      'Pessoa Confidencial',
+    )
+    await user.type(
+      screen.getByRole('textbox', { name: 'Telefone' }),
+      '(31) 98888-7777',
+    )
+    await user.type(
+      screen.getByRole('textbox', { name: 'Rua ou avenida' }),
+      'Rua Confidencial',
+    )
+    await user.type(screen.getByRole('textbox', { name: 'Número' }), '99')
+    await user.selectOptions(
+      screen.getByRole('combobox', { name: 'Bairro' }),
+      'Savassi',
+    )
+    await user.click(screen.getByRole('radio', { name: 'Pix' }))
+    await user.type(
+      screen.getByRole('textbox', { name: 'Observação opcional' }),
+      'Observação sigilosa',
+    )
+    await user.click(screen.getByRole('button', { name: 'Avançar' }))
+    await user.click(
+      screen.getByRole('button', { name: 'Confirmar pedido simulado' }),
+    )
+
+    expect(screen.queryByText('Pessoa Confidencial')).not.toBeInTheDocument()
+    expect(screen.queryByText('(31) 98888-7777')).not.toBeInTheDocument()
+    expect(screen.queryByText(/Rua Confidencial/)).not.toBeInTheDocument()
+    expect(screen.queryByText('Observação sigilosa')).not.toBeInTheDocument()
+
+    await user.click(screen.getByRole('button', { name: 'Voltar ao cardápio' }))
+    expect(onClose).toHaveBeenCalledTimes(1)
+    view.rerenderCheckout(false)
+    view.rerenderCheckout(true)
+    await user.click(screen.getByRole('radio', { name: 'Entrega' }))
+    await user.click(screen.getByRole('button', { name: 'Avançar' }))
+
+    expect(screen.getByRole('textbox', { name: 'Nome' })).toHaveValue('')
+    expect(screen.getByRole('textbox', { name: 'Telefone' })).toHaveValue('')
+    expect(screen.getByRole('textbox', { name: 'Rua ou avenida' })).toHaveValue('')
+    expect(screen.getByRole('textbox', { name: 'Número' })).toHaveValue('')
+    expect(screen.getByRole('combobox', { name: 'Bairro' })).toHaveValue('')
+    expect(screen.getByRole('textbox', { name: 'Observação opcional' })).toHaveValue(
+      '',
+    )
+    expect(screen.getByRole('radio', { name: 'Pix' })).not.toBeChecked()
+    expect(screen.getByRole('radio', { name: 'Cartão na entrega' })).not.toBeChecked()
+    expect(screen.getByRole('radio', { name: 'Dinheiro' })).not.toBeChecked()
+  })
+
+  it('notifica o fechamento uma vez quando Escape dispara cancel repetido', () => {
+    const onClose = vi.fn()
+    renderCheckout({ onClose })
+    const dialog = screen.getByRole('dialog', { name: 'Checkout demonstrativo' })
+
+    fireEvent(dialog, new Event('cancel', { cancelable: true }))
+    fireEvent(dialog, new Event('cancel', { cancelable: true }))
+
+    expect(onClose).toHaveBeenCalledTimes(1)
   })
 
   it('abre como diálogo rotulado, foca o fechamento e mantém controles navegáveis', async () => {
