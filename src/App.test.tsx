@@ -1,9 +1,14 @@
+import { readFileSync } from 'node:fs'
+import { resolve } from 'node:path'
+
 import { render, screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { describe, expect, it, vi } from 'vitest'
 
 import App from './App'
 import { CART_STORAGE_KEY } from './lib/cart'
+
+const flowCss = readFileSync(resolve(process.cwd(), 'src/styles/flows.css'), 'utf8')
 
 vi.mock('./components/hero/HeroShowcase', () => ({
   HeroShowcase: ({
@@ -199,6 +204,35 @@ describe('App', () => {
       screen.getByRole('region', { name: /AYORUME Savassi/i }),
     ).toHaveAttribute('id', 'localizacao')
     expect(screen.getByText('Endereço fictício')).toBeInTheDocument()
+  })
+
+  it('protege o aviso obrigatório e o alvo móvel de localização', () => {
+    render(<App />)
+
+    const navigation = screen.getByRole('navigation', {
+      name: 'Navegação principal',
+    })
+    const locationLink = within(navigation).getByRole('link', {
+      name: 'Localização',
+    })
+    const disclaimer = within(screen.getByRole('contentinfo')).getByText(
+      /Endereço fictício · Nenhuma transação real/i,
+    )
+
+    expect(locationLink).toHaveClass('flow-nav-location-link')
+    expect(disclaimer).toHaveClass('flow-footer-disclaimer')
+    expect(flowCss).toMatch(
+      /footer\s*>\s*\.flow-footer-disclaimer\s*\{(?=[^}]*font-size:\s*12px)(?=[^}]*color:\s*var\(--ink\))[^}]*\}/s,
+    )
+    expect(flowCss).toMatch(
+      /@media\s*\(max-width:\s*640px\)[\s\S]*?\.flow-nav-location-link\s*\{(?=[^}]*display:\s*flex)(?=[^}]*min-height:\s*44px)(?=[^}]*padding(?:-block)?:\s*[^;}]+)[^}]*\}/s,
+    )
+    expect(flowCss).toMatch(
+      /\.flow-nav-location-link:focus-visible\s*\{[^}]*outline:\s*2px\s+solid[^}]*\}/s,
+    )
+    expect(flowCss).toMatch(
+      /@media\s*\(max-width:\s*640px\)[\s\S]*?footer\s*>\s*\.flow-footer-disclaimer\s*\{(?=[^}]*font-size:\s*12px)(?=[^}]*color:\s*var\(--ink\))[^}]*\}/s,
+    )
   })
 
   it('abre a reserva pela experiência e devolve o foco ao acionador', async () => {

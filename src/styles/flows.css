@@ -1078,6 +1078,17 @@
   outline-offset: 3px;
 }
 
+.flow-nav-location-link:focus-visible {
+  outline: 2px solid color-mix(in srgb, var(--red) 48%, transparent);
+  outline-offset: 3px;
+}
+
+footer > .flow-footer-disclaimer {
+  color: var(--ink);
+  font-size: 12px;
+  line-height: 1.5;
+}
+
 .flow-reservation-dialog {
   --flow-control-border: color-mix(in srgb, var(--line) 50%, var(--ink));
   position: fixed;
@@ -1670,6 +1681,19 @@
   .flow-nav-reservation-button {
     width: 100%;
     justify-content: center;
+  }
+
+  .flow-nav-location-link {
+    display: flex;
+    min-height: 44px;
+    align-items: center;
+    padding-block: 10px;
+  }
+
+  footer > .flow-footer-disclaimer {
+    color: var(--ink);
+    font-size: 12px;
+    line-height: 1.5;
   }
 
   .flow-mobile-action-bar + .flow-reservation-dialog {

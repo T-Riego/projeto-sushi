@@ -183,7 +183,11 @@ export default function App() {
           <a href="#experiencia" onClick={() => setNavOpen(false)}>
             A experiência
           </a>
-          <a href="#localizacao" onClick={() => setNavOpen(false)}>
+          <a
+            className="flow-nav-location-link"
+            href="#localizacao"
+            onClick={() => setNavOpen(false)}
+          >
             Localização
           </a>
           <button
@@ -316,7 +320,7 @@ export default function App() {
           O menu <ArrowUpRight size={14} />
         </a>
         <a href={assetPath('creditos-fotograficos.html')}>Créditos das fotos</a>
-        <small>
+        <small className="flow-footer-disclaimer">
           Projeto conceito · Restaurante e menu ilustrativos · Endereço fictício
           {' · '}Nenhuma transação real
         </small>
