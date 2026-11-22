@@ -4,6 +4,10 @@ Experiência digital de um restaurante fictício criada como projeto de portfól
 com Vite, React, TypeScript, Tailwind CSS e Three.js. A unidade AYORUME Savassi,
 seu endereço, seus pedidos e suas reservas são integralmente demonstrativos.
 
+## Prévia online
+
+[Abrir a experiência AYORUME no GitHub Pages](https://t-riego.github.io/projeto-sushi/)
+
 ## Executar
 
 Use Node 24 LTS ou 26+, como no ambiente em que o projeto foi testado.
