@@ -189,7 +189,12 @@ describe('CheckoutDemo', () => {
 
   it('conclui uma entrega válida até a confirmação demonstrativa', async () => {
     const user = userEvent.setup()
-    const onComplete = vi.fn()
+    let addressWasVisibleOnComplete: boolean | undefined
+    const onComplete = vi.fn(() => {
+      addressWasVisibleOnComplete = document.body.textContent?.includes(
+        'Rua das Acácias',
+      )
+    })
     renderCheckout({ onComplete })
 
     await user.click(screen.getByRole('radio', { name: 'Entrega' }))
@@ -219,6 +224,7 @@ describe('CheckoutDemo', () => {
     ).toBeInTheDocument()
     expect(screen.getByText('Entrega')).toBeInTheDocument()
     expect(screen.queryByText(/Rua das Acácias/)).not.toBeInTheDocument()
+    expect(addressWasVisibleOnComplete).toBe(false)
     expect(onComplete).toHaveBeenCalledTimes(1)
   })
 

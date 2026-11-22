@@ -4,6 +4,7 @@ import type { CheckoutDraft } from '../types/flows'
 import {
   createDemoOrderCode,
   isDeliveryNeighborhood,
+  sanitizeCheckoutAfterConfirmation,
   validateCheckout,
 } from './flowValidation'
 
@@ -108,6 +109,35 @@ describe('flowValidation', () => {
     expect(
       validateCheckout(validPickupDraft({ notes: 'a'.repeat(401) })),
     ).toHaveProperty('notes')
+  })
+
+  it('remove PII, endereço, observações e pagamento após a confirmação', () => {
+    const draft: CheckoutDraft = {
+      mode: 'delivery',
+      schedule: { kind: 'scheduled', value: '20:30' },
+      contact: { name: 'Ana Lima', phone: '(31) 99999-1234' },
+      address: {
+        street: 'Rua Confidencial',
+        number: '99',
+        complement: 'Apto 202',
+        neighborhood: 'Savassi',
+      },
+      payment: 'card-on-delivery',
+      notes: 'Alergia informada em caráter privado',
+    }
+
+    const sanitized = sanitizeCheckoutAfterConfirmation(draft)
+
+    expect(sanitized).toEqual({
+      mode: 'delivery',
+      schedule: { kind: 'scheduled', value: '20:30' },
+      contact: { name: '', phone: '' },
+      notes: '',
+    })
+    expect(sanitized).not.toHaveProperty('address')
+    expect(sanitized).not.toHaveProperty('payment')
+    expect(draft.contact.name).toBe('Ana Lima')
+    expect(draft.address?.street).toBe('Rua Confidencial')
   })
 
   it('cria um código demonstrativo determinístico no formato AYORUME', () => {

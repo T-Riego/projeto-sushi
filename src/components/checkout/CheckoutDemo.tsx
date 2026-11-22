@@ -3,7 +3,11 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 import { menuItems } from '../../data/menu'
 import { restaurant } from '../../data/restaurant'
 import { getLineUnitPrice } from '../../lib/cart'
-import { createDemoOrderCode, validateCheckout } from '../../lib/flowValidation'
+import {
+  createDemoOrderCode,
+  sanitizeCheckoutAfterConfirmation,
+  validateCheckout,
+} from '../../lib/flowValidation'
 import type {
   CheckoutAddress,
   CheckoutContact,
@@ -99,6 +103,7 @@ export function CheckoutDemo({
   const focusedValidationAttemptRef = useRef(0)
   const closeNotifiedRef = useRef(false)
   const completedRef = useRef(false)
+  const completionPendingRef = useRef(false)
 
   const [step, setStep] = useState<CheckoutStep>(1)
   const [mode, setMode] = useState<FulfillmentMode>()
@@ -116,6 +121,7 @@ export function CheckoutDemo({
     previousStepRef.current = 1
     validationAttemptRef.current = 0
     focusedValidationAttemptRef.current = 0
+    completionPendingRef.current = false
     setStep(1)
     setMode(undefined)
     setSchedule({ kind: 'asap' })
@@ -151,6 +157,15 @@ export function CheckoutDemo({
     }
     resetState()
   }, [open])
+
+  useEffect(() => {
+    if (step !== 4 || !completionPendingRef.current) {
+      return
+    }
+
+    completionPendingRef.current = false
+    onComplete()
+  }, [onComplete, step])
 
   const reviewLines = useMemo(
     () =>
@@ -228,15 +243,19 @@ export function CheckoutDemo({
     }
 
     completedRef.current = true
-    setContact({ ...emptyContact })
-    setAddress({ ...emptyAddress })
-    setNotes('')
+    const sanitizedDraft = sanitizeCheckoutAfterConfirmation(checkoutDraft())
+    setMode(sanitizedDraft.mode)
+    setSchedule(sanitizedDraft.schedule)
+    setContact(sanitizedDraft.contact)
+    setAddress(sanitizedDraft.address ?? { ...emptyAddress })
+    setPayment(sanitizedDraft.payment)
+    setNotes(sanitizedDraft.notes ?? '')
     setErrors({})
     setPickupNotice('')
     setOrderCode(createDemoOrderCode())
     setConfirmedTotal(total)
+    completionPendingRef.current = true
     setStep(4)
-    onComplete()
   }
 
   const requestClose = () => {

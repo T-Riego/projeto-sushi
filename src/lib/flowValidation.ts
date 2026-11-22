@@ -53,6 +53,20 @@ export function validateCheckout(draft: CheckoutDraft): FieldErrors {
   return errors
 }
 
+export function sanitizeCheckoutAfterConfirmation(
+  draft: CheckoutDraft,
+): CheckoutDraft {
+  return {
+    mode: draft.mode,
+    schedule:
+      draft.schedule.kind === 'scheduled'
+        ? { kind: 'scheduled', value: draft.schedule.value }
+        : { kind: 'asap' },
+    contact: { name: '', phone: '' },
+    notes: '',
+  }
+}
+
 export function createDemoOrderCode(random: () => number = Math.random): string {
   const sample = random()
   const normalized = Number.isFinite(sample)
