@@ -306,7 +306,7 @@ describe('DigitalMenu', () => {
     renderMenu()
 
     const image = screen.getByRole('img', {
-      name: 'Sunomono de pepino com gergelim em tigela clara',
+      name: 'Sunomono de pepino com gergelim em tigela artesanal escura',
     }) as HTMLImageElement
 
     fireEvent.error(image)
