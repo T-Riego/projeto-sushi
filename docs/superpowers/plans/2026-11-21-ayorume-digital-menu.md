@@ -655,11 +655,8 @@ Expected: exit 0 e chunk `SushiScene` separado.
 
 Run:
 
-```powershell
-rg -n "Sujeito Programador|SujeitoProgramador|Matheus|Kōri|Kori" src public index.html README.md
-```
-
-Expected: nenhum resultado.
+Pesquisar em `src`, `public`, `index.html` e `README.md` por todas as referências
+da autoria e da marca legadas. Expected: nenhum resultado.
 
 Run:
 
