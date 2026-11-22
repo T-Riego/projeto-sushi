@@ -1617,6 +1617,35 @@ footer > .flow-footer-disclaimer {
     align-items: center;
   }
 
+  .header-actions .button-small.flow-essential-control {
+    min-height: 44px;
+  }
+
+  .hero-ctas .text-button {
+    min-height: 44px;
+  }
+
+  .view-button {
+    min-height: 44px;
+  }
+
+  .picker {
+    min-height: 44px;
+  }
+
+  .picker-arrows button {
+    min-width: 44px;
+    min-height: 44px;
+  }
+
+  .discover-link {
+    min-height: 44px;
+  }
+
+  .site-footer > a {
+    min-height: 44px;
+  }
+
   .flow-nav-link {
     padding-block: 10px;
   }

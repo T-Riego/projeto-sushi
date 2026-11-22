@@ -9,10 +9,31 @@ import App from './App'
 import { CART_STORAGE_KEY } from './lib/cart'
 
 const flowCss = readFileSync(resolve(process.cwd(), 'src/styles/flows.css'), 'utf8')
+const catalogCss = readFileSync(
+  resolve(process.cwd(), 'src/styles/catalog.css'),
+  'utf8',
+)
 const readme = readFileSync(resolve(process.cwd(), 'README.md'), 'utf8')
 
 function cssRuleBody(source: string, selector: string): string {
-  const ruleStart = source.lastIndexOf(`${selector} {`)
+  const ruleNeedle = `${selector} {`
+  let searchFrom = source.length
+  let ruleStart = -1
+
+  while (searchFrom >= 0) {
+    const candidate = source.lastIndexOf(ruleNeedle, searchFrom)
+    if (candidate < 0) {
+      break
+    }
+
+    const lineStart = source.lastIndexOf('\n', candidate - 1) + 1
+    if (source.slice(lineStart, candidate).trim() === '') {
+      ruleStart = candidate
+      break
+    }
+    searchFrom = candidate - 1
+  }
+
   if (ruleStart < 0) {
     throw new Error(`Regra CSS ausente: ${selector}`)
   }
@@ -53,6 +74,29 @@ function numericCssValue(
   }
 
   return value
+}
+
+function cssAtRuleBody(source: string, atRule: string): string {
+  const atRuleStart = source.lastIndexOf(`${atRule} {`)
+  if (atRuleStart < 0) {
+    throw new Error(`At-rule CSS ausente: ${atRule}`)
+  }
+
+  const bodyStart = source.indexOf('{', atRuleStart)
+  let depth = 0
+
+  for (let index = bodyStart; index < source.length; index += 1) {
+    if (source[index] === '{') {
+      depth += 1
+    } else if (source[index] === '}') {
+      depth -= 1
+      if (depth === 0) {
+        return source.slice(bodyStart + 1, index)
+      }
+    }
+  }
+
+  throw new Error(`At-rule CSS sem fechamento: ${atRule}`)
 }
 
 vi.mock('./components/hero/HeroShowcase', () => ({
@@ -193,6 +237,59 @@ describe('App', () => {
       expect(numericCssValue(flowCss, dialogSelector, 'z-index')).toBeGreaterThan(
         toastLayer,
       )
+    }
+  })
+
+  it('mantém o diálogo de produto acima do toast e abaixo dos fluxos', () => {
+    const toastLayer = numericCssValue(
+      flowCss,
+      ".flow-mobile-action-bar ~ [role='status']",
+      'z-index',
+    )
+    const productLayer = numericCssValue(
+      catalogCss,
+      '.product-dialog',
+      'z-index',
+    )
+
+    expect(productLayer).toBeGreaterThan(toastLayer)
+    for (const dialogSelector of [
+      '.checkout-dialog',
+      '.flow-reservation-dialog',
+      '.cart-drawer-dialog',
+    ]) {
+      expect(productLayer).toBeLessThan(
+        numericCssValue(flowCss, dialogSelector, 'z-index'),
+      )
+    }
+  })
+
+  it('mantém o CTA do cabeçalho com 44 px sem vencer o hide compacto', () => {
+    const mobileRules = cssAtRuleBody(flowCss, '@media (max-width: 640px)')
+    const headerCtaRule = cssRuleBody(
+      mobileRules,
+      '.header-actions .button-small.flow-essential-control',
+    )
+
+    expect(headerCtaRule).toContain('min-height: 44px')
+    expect(headerCtaRule).not.toContain('display:')
+  })
+
+  it.each([
+    '.hero-ctas .text-button',
+    '.view-button',
+    '.picker',
+    '.picker-arrows button',
+    '.discover-link',
+    '.site-footer > a',
+  ])('garante alvo móvel de 44 px para %s', (selector) => {
+    const mobileRules = cssAtRuleBody(flowCss, '@media (max-width: 640px)')
+    const targetRule = cssRuleBody(mobileRules, selector)
+
+    expect(targetRule).toContain('min-height: 44px')
+    expect(targetRule).not.toContain('display:')
+    if (selector === '.picker-arrows button') {
+      expect(targetRule).toContain('min-width: 44px')
     }
   })
 
