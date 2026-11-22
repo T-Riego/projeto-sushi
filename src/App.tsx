@@ -48,6 +48,7 @@ export default function App() {
   } | null>(null)
   const [navOpen, setNavOpen] = useState(false)
   const [reservationOpen, setReservationOpen] = useState(false)
+  const mainContentRef = useRef<HTMLElement>(null)
   const bagButtonRef = useRef<HTMLButtonElement>(null)
   const mobileToggleRef = useRef<HTMLButtonElement>(null)
   const reservationOpenerRef = useRef<HTMLElement | null>(null)
@@ -163,35 +164,60 @@ export default function App() {
   }, [reservationOpen])
 
   const bagItemLabel = `${count} ${count === 1 ? 'item' : 'itens'}`
+  const bagAnnouncement =
+    count === 0 ? 'Sacola vazia.' : `Sacola atualizada: ${bagItemLabel}.`
 
   return (
     <>
+      <a
+        className="flow-skip-link"
+        href="#main-content"
+        onClick={() => mainContentRef.current?.focus()}
+      >
+        Pular para o conteúdo
+      </a>
       <header className="site-header wrap">
-        <a className="logo" href="#" aria-label="AYORUME, início">
+        <a
+          className="logo flow-essential-control"
+          href="#"
+          aria-label="AYORUME, início"
+        >
           ayorume
         </a>
         <nav
           className={navOpen ? 'main-nav is-open' : 'main-nav'}
           aria-label="Navegação principal"
         >
-          <a href="#menu" onClick={() => setNavOpen(false)}>
+          <a
+            className="flow-nav-link flow-essential-control"
+            href="#menu"
+            onClick={() => setNavOpen(false)}
+          >
             O menu <ArrowUpRight size={13} />
           </a>
-          <a href="#filosofia" onClick={() => setNavOpen(false)}>
+          <a
+            className="flow-nav-link flow-essential-control"
+            href="#filosofia"
+            onClick={() => setNavOpen(false)}
+          >
             O nosso ritual
           </a>
-          <a href="#experiencia" onClick={() => setNavOpen(false)}>
+          <a
+            className="flow-nav-link flow-essential-control"
+            href="#experiencia"
+            onClick={() => setNavOpen(false)}
+          >
             A experiência
           </a>
           <a
-            className="flow-nav-location-link"
+            className="flow-nav-link flow-nav-location-link flow-essential-control"
             href="#localizacao"
             onClick={() => setNavOpen(false)}
           >
             Localização
           </a>
           <button
-            className="flow-nav-reservation-button"
+            className="flow-nav-reservation-button flow-essential-control"
             type="button"
             onClick={openReservation}
           >
@@ -201,20 +227,32 @@ export default function App() {
         <div className="header-actions">
           <button
             ref={bagButtonRef}
-            className="bag-button"
+            className="bag-button flow-essential-control"
             type="button"
             aria-label={`Abrir sacola, ${bagItemLabel}`}
             onClick={() => setCartOpen(true)}
           >
-            <ShoppingBag size={19} />
-            <span className="bag-count">{count.toString().padStart(2, '0')}</span>
+            <ShoppingBag size={19} aria-hidden="true" />
+            <span className="bag-count" aria-hidden="true">
+              {count.toString().padStart(2, '0')}
+            </span>
           </button>
-          <a href="#menu" className="button button-small">
+          <span
+            className="flow-sr-only flow-cart-count-announcement"
+            aria-live="polite"
+            aria-atomic="true"
+          >
+            {bagAnnouncement}
+          </span>
+          <a
+            href="#menu"
+            className="button button-small flow-essential-control"
+          >
             Fazer pedido <ArrowUpRight size={16} />
           </a>
           <button
             ref={mobileToggleRef}
-            className="mobile-toggle"
+            className="mobile-toggle flow-essential-control"
             type="button"
             aria-label={navOpen ? 'Fechar navegação' : 'Abrir navegação'}
             aria-expanded={navOpen}
@@ -225,7 +263,7 @@ export default function App() {
         </div>
       </header>
 
-      <main>
+      <main ref={mainContentRef} id="main-content" tabIndex={-1}>
         <HeroShowcase onAddProduct={handleHeroAdd} />
 
         <div className="ritual-strip" aria-hidden="true">

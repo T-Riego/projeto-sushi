@@ -9,6 +9,51 @@ import App from './App'
 import { CART_STORAGE_KEY } from './lib/cart'
 
 const flowCss = readFileSync(resolve(process.cwd(), 'src/styles/flows.css'), 'utf8')
+const readme = readFileSync(resolve(process.cwd(), 'README.md'), 'utf8')
+
+function cssRuleBody(source: string, selector: string): string {
+  const ruleStart = source.lastIndexOf(`${selector} {`)
+  if (ruleStart < 0) {
+    throw new Error(`Regra CSS ausente: ${selector}`)
+  }
+
+  const bodyStart = source.indexOf('{', ruleStart) + 1
+  const bodyEnd = source.indexOf('}', bodyStart)
+  return source.slice(bodyStart, bodyEnd)
+}
+
+function numericCssValue(
+  source: string,
+  selector: string,
+  property: string,
+): number {
+  const ruleNeedle = `${selector} {`
+  const declarationPattern = new RegExp(`${property}:\\s*(\\d+)`)
+  let searchFrom = 0
+  let value: number | undefined
+
+  while (searchFrom < source.length) {
+    const ruleStart = source.indexOf(ruleNeedle, searchFrom)
+    if (ruleStart < 0) {
+      break
+    }
+    const bodyStart = source.indexOf('{', ruleStart) + 1
+    const bodyEnd = source.indexOf('}', bodyStart)
+    const declaration = source
+      .slice(bodyStart, bodyEnd)
+      .match(declarationPattern)
+    if (declaration) {
+      value = Number(declaration[1])
+    }
+    searchFrom = bodyEnd + 1
+  }
+
+  if (value === undefined) {
+    throw new Error(`Declaração CSS ausente: ${selector} { ${property} }`)
+  }
+
+  return value
+}
 
 vi.mock('./components/hero/HeroShowcase', () => ({
   HeroShowcase: ({
@@ -23,6 +68,148 @@ vi.mock('./components/hero/HeroShowcase', () => ({
 }))
 
 describe('App', () => {
+  it('oferece um salto de teclado que leva foco ao conteúdo principal', async () => {
+    const user = userEvent.setup()
+    render(<App />)
+
+    const skipLink = screen.getByRole('link', {
+      name: 'Pular para o conteúdo',
+    })
+    const main = screen.getByRole('main')
+
+    expect(skipLink).toHaveAttribute('href', '#main-content')
+    expect(skipLink).toHaveClass('flow-skip-link')
+    expect(main).toHaveAttribute('id', 'main-content')
+    expect(main).toHaveAttribute('tabindex', '-1')
+
+    await user.tab()
+    expect(skipLink).toHaveFocus()
+    await user.keyboard('{Enter}')
+    expect(main).toHaveFocus()
+
+    const baseRule = cssRuleBody(flowCss, '.flow-skip-link')
+    const focusRule = cssRuleBody(flowCss, '.flow-skip-link:focus-visible')
+    expect(baseRule).toContain('position: fixed')
+    expect(baseRule).toContain('transform: translateY(')
+    expect(focusRule).toContain('transform: translateY(0)')
+    expect(focusRule).toContain('outline: 2px solid')
+  })
+
+  it('anuncia a contagem da sacola sem duplicar o número visual', async () => {
+    const user = userEvent.setup()
+    const { container } = render(<App />)
+    const bagButton = screen.getByRole('button', {
+      name: 'Abrir sacola, 0 itens',
+    })
+    const visualCount = bagButton.querySelector('.bag-count')
+    const announcement = container.querySelector(
+      '.flow-cart-count-announcement',
+    )
+
+    expect(visualCount).toHaveAttribute('aria-hidden', 'true')
+    expect(announcement).toHaveAttribute('aria-live', 'polite')
+    expect(announcement).toHaveAttribute('aria-atomic', 'true')
+    expect(announcement).toHaveClass('flow-sr-only')
+    expect(announcement).toHaveTextContent('Sacola vazia')
+
+    await user.click(
+      screen.getByRole('button', {
+        name: 'Adicionar Sunomono AYORUME à sacola',
+      }),
+    )
+
+    expect(announcement).toHaveTextContent('Sacola atualizada: 1 item')
+    expect(visualCount).toHaveTextContent('01')
+  })
+
+  it('mantém toda expressão japonesa apenas em conteúdo decorativo', () => {
+    const { container } = render(<App />)
+    const japaneseCharacters = /[\u3040-\u30ff\u3400-\u9fff]/
+    const walker = document.createTreeWalker(
+      container,
+      window.NodeFilter.SHOW_TEXT,
+    )
+    const japaneseTextNodes: Text[] = []
+
+    let node = walker.nextNode()
+    while (node) {
+      if (japaneseCharacters.test(node.textContent ?? '')) {
+        japaneseTextNodes.push(node as Text)
+      }
+      node = walker.nextNode()
+    }
+
+    expect(japaneseTextNodes.length).toBeGreaterThanOrEqual(3)
+    for (const textNode of japaneseTextNodes) {
+      expect(
+        textNode.parentElement?.closest('[aria-hidden="true"]'),
+      ).not.toBeNull()
+    }
+  })
+
+  it('preserva foco, alvos móveis e a ordem das camadas essenciais', () => {
+    render(<App />)
+
+    const navigation = screen.getByRole('navigation', {
+      name: 'Navegação principal',
+    })
+    const essentialControls = [
+      ...within(navigation).getAllByRole('link'),
+      within(navigation).getByRole('button', { name: 'Reservar' }),
+      screen.getByRole('button', { name: /Abrir sacola/i }),
+      screen.getByRole('link', { name: /Fazer pedido/i }),
+      screen.getByRole('button', { name: /Abrir navegação/i }),
+    ]
+
+    for (const control of essentialControls) {
+      expect(control).toHaveClass('flow-essential-control')
+    }
+
+    const focusRule = cssRuleBody(
+      flowCss,
+      '.flow-essential-control:focus-visible',
+    )
+    const mobileTargetRule = cssRuleBody(flowCss, '.flow-essential-control')
+    expect(focusRule).toContain('outline: 2px solid')
+    expect(mobileTargetRule).toContain('min-width: 44px')
+    expect(mobileTargetRule).toContain('min-height: 44px')
+
+    const barLayer = numericCssValue(
+      flowCss,
+      '.flow-mobile-action-bar',
+      'z-index',
+    )
+    const toastLayer = numericCssValue(
+      flowCss,
+      ".flow-mobile-action-bar ~ [role='status']",
+      'z-index',
+    )
+    expect(toastLayer).toBeGreaterThan(barLayer)
+    for (const dialogSelector of [
+      '.checkout-dialog',
+      '.flow-reservation-dialog',
+      '.cart-drawer-dialog',
+    ]) {
+      expect(numericCssValue(flowCss, dialogSelector, 'z-index')).toBeGreaterThan(
+        toastLayer,
+      )
+    }
+  })
+
+  it('documenta execução, privacidade, publicação relativa e créditos', () => {
+    const documentation = readme.toLocaleLowerCase('pt-BR')
+
+    expect(documentation).toContain('restaurante fictício')
+    expect(documentation).toContain('projeto de portfólio')
+    expect(documentation).toContain('npm test')
+    expect(documentation).toContain('npm run typecheck')
+    expect(documentation).toContain('sem transmitir')
+    expect(documentation).toContain('dados pessoais')
+    expect(documentation).toContain('caminhos relativos')
+    expect(documentation).toContain('18 imagens gastronômicas geradas')
+    expect(documentation).toContain('6 fotografias externas')
+  })
+
   it('conecta o hero ao carrinho v2, abre a nova sacola e devolve o foco', async () => {
     const user = userEvent.setup()
     render(<App />)
