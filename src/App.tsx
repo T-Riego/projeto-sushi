@@ -14,6 +14,9 @@ import {
 } from './components/cart/CartDrawer'
 import { HeroShowcase } from './components/hero/HeroShowcase'
 import { DigitalMenu } from './components/menu/DigitalMenu'
+import { ReservationDemo } from './components/reservation/ReservationDemo'
+import { LocationSection } from './components/site/LocationSection'
+import { MobileActionBar } from './components/site/MobileActionBar'
 import { menuItems } from './data/menu'
 import { useCart } from './hooks/useCart'
 import { useToast } from './hooks/useToast'
@@ -44,7 +47,12 @@ export default function App() {
     target: Exclude<CartCloseReason, 'checkout'>
   } | null>(null)
   const [navOpen, setNavOpen] = useState(false)
+  const [reservationOpen, setReservationOpen] = useState(false)
   const bagButtonRef = useRef<HTMLButtonElement>(null)
+  const mobileToggleRef = useRef<HTMLButtonElement>(null)
+  const reservationOpenerRef = useRef<HTMLElement | null>(null)
+  const reservationUsesMobileNavFallbackRef = useRef(false)
+  const reservationRestorePendingRef = useRef(false)
   const {
     lines,
     count,
@@ -71,6 +79,32 @@ export default function App() {
         target: reason,
       }))
     }
+  }
+
+  const requestCatalogFocus = () => {
+    setNavOpen(false)
+    setFocusRequest((current) => ({
+      id: (current?.id ?? 0) + 1,
+      target: 'menu',
+    }))
+  }
+
+  const openReservation = () => {
+    if (!reservationOpen && document.activeElement instanceof HTMLElement) {
+      reservationOpenerRef.current = document.activeElement
+      reservationUsesMobileNavFallbackRef.current = Boolean(
+        document.activeElement.closest('.main-nav') &&
+          window.matchMedia('(max-width: 640px)').matches,
+      )
+    }
+    reservationRestorePendingRef.current = false
+    setNavOpen(false)
+    setReservationOpen(true)
+  }
+
+  const closeReservation = () => {
+    reservationRestorePendingRef.current = true
+    setReservationOpen(false)
   }
 
   useEffect(() => {
@@ -104,6 +138,30 @@ export default function App() {
     return () => window.clearTimeout(focusTimer)
   }, [focusRequest])
 
+  useEffect(() => {
+    if (reservationOpen || !reservationRestorePendingRef.current) {
+      return
+    }
+
+    const focusTimer = window.setTimeout(() => {
+      if (document.querySelector('.flow-reservation-dialog[open]')) {
+        return
+      }
+
+      const focusTarget = reservationUsesMobileNavFallbackRef.current
+        ? mobileToggleRef.current
+        : reservationOpenerRef.current
+      if (focusTarget?.isConnected) {
+        focusTarget.focus({ preventScroll: true })
+      }
+      reservationOpenerRef.current = null
+      reservationUsesMobileNavFallbackRef.current = false
+      reservationRestorePendingRef.current = false
+    }, 0)
+
+    return () => window.clearTimeout(focusTimer)
+  }, [reservationOpen])
+
   const bagItemLabel = `${count} ${count === 1 ? 'item' : 'itens'}`
 
   return (
@@ -125,6 +183,16 @@ export default function App() {
           <a href="#experiencia" onClick={() => setNavOpen(false)}>
             A experiência
           </a>
+          <a href="#localizacao" onClick={() => setNavOpen(false)}>
+            Localização
+          </a>
+          <button
+            className="flow-nav-reservation-button"
+            type="button"
+            onClick={openReservation}
+          >
+            Reservar
+          </button>
         </nav>
         <div className="header-actions">
           <button
@@ -141,6 +209,7 @@ export default function App() {
             Fazer pedido <ArrowUpRight size={16} />
           </a>
           <button
+            ref={mobileToggleRef}
             className="mobile-toggle"
             type="button"
             aria-label={navOpen ? 'Fechar navegação' : 'Abrir navegação'}
@@ -227,13 +296,15 @@ export default function App() {
               merece <em>AYORUME.</em>
             </h2>
           </div>
-          <a href="#menu" className="button">
-            Vamos escolher? <MoveUpRight size={22} />
-          </a>
+          <button className="button" type="button" onClick={openReservation}>
+            Reservar mesa <MoveUpRight size={22} />
+          </button>
           <span className="experience-mark" aria-hidden="true">
             À MESA.
           </span>
         </section>
+
+        <LocationSection />
       </main>
 
       <footer className="site-footer wrap">
@@ -245,8 +316,26 @@ export default function App() {
           O menu <ArrowUpRight size={14} />
         </a>
         <a href={assetPath('creditos-fotograficos.html')}>Créditos das fotos</a>
-        <small>Projeto conceito · Restaurante e menu ilustrativos</small>
+        <small>
+          Projeto conceito · Restaurante e menu ilustrativos · Endereço fictício
+          {' · '}Nenhuma transação real
+        </small>
       </footer>
+
+      <MobileActionBar
+        count={count}
+        onMenu={requestCatalogFocus}
+        onOrder={() => {
+          if (count > 0) {
+            setCartOpen(true)
+            return
+          }
+          requestCatalogFocus()
+        }}
+        onReservation={openReservation}
+      />
+
+      <ReservationDemo open={reservationOpen} onClose={closeReservation} />
 
       <CartDrawer
         open={cartOpen}

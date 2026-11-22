@@ -181,4 +181,121 @@ describe('App', () => {
       block: 'start',
     })
   })
+
+  it('expõe localização e reserva na navegação principal', () => {
+    render(<App />)
+
+    const navigation = screen.getByRole('navigation', {
+      name: 'Navegação principal',
+    })
+    expect(within(navigation).getByRole('link', { name: 'Localização' })).toHaveAttribute(
+      'href',
+      '#localizacao',
+    )
+    expect(
+      within(navigation).getByRole('button', { name: 'Reservar' }),
+    ).toBeInTheDocument()
+    expect(
+      screen.getByRole('region', { name: /AYORUME Savassi/i }),
+    ).toHaveAttribute('id', 'localizacao')
+    expect(screen.getByText('Endereço fictício')).toBeInTheDocument()
+  })
+
+  it('abre a reserva pela experiência e devolve o foco ao acionador', async () => {
+    const user = userEvent.setup()
+    render(<App />)
+    const trigger = screen.getByRole('button', { name: 'Reservar mesa' })
+    const focusSpy = vi.spyOn(trigger, 'focus')
+
+    await user.click(trigger)
+    const dialog = screen.getByRole('dialog', { name: 'Reserva demonstrativa' })
+    expect(dialog).toBeInTheDocument()
+    await user.click(
+      within(dialog).getByRole('button', { name: 'Fechar reserva' }),
+    )
+
+    await waitFor(() => expect(trigger).toHaveFocus())
+    expect(focusSpy).toHaveBeenLastCalledWith({ preventScroll: true })
+  })
+
+  it('leva o pedido móvel vazio ao catálogo e abre a sacola quando há item', async () => {
+    const user = userEvent.setup()
+    render(<App />)
+    const actions = screen.getByRole('navigation', { name: 'Ações rápidas' })
+    const menu = document.getElementById('menu')!
+    const catalogTitle = document.getElementById('catalog-title')!
+    const scrollIntoView = vi.mocked(menu.scrollIntoView)
+    scrollIntoView.mockClear()
+
+    await user.click(
+      within(actions).getByRole('button', {
+        name: 'Pedir, sacola com 0 itens',
+      }),
+    )
+
+    await waitFor(() => expect(catalogTitle).toHaveFocus())
+    expect(scrollIntoView).toHaveBeenCalledWith({
+      behavior: 'smooth',
+      block: 'start',
+    })
+
+    await user.click(
+      screen.getByRole('button', {
+        name: 'Adicionar Sunomono AYORUME à sacola',
+      }),
+    )
+    await user.click(
+      within(actions).getByRole('button', {
+        name: 'Pedir, sacola com 1 item',
+      }),
+    )
+
+    expect(screen.getByRole('dialog', { name: /Sua sacola/i })).toBeInTheDocument()
+  })
+
+  it('abre a reserva pela ação móvel', async () => {
+    const user = userEvent.setup()
+    render(<App />)
+    const actions = screen.getByRole('navigation', { name: 'Ações rápidas' })
+
+    await user.click(within(actions).getByRole('button', { name: 'Reservar' }))
+
+    expect(
+      screen.getByRole('dialog', { name: 'Reserva demonstrativa' }),
+    ).toBeInTheDocument()
+  })
+
+  it('devolve o foco ao controle visível quando a reserva parte do menu móvel', async () => {
+    const user = userEvent.setup()
+    render(<App />)
+    const matchMedia = vi.mocked(window.matchMedia)
+    matchMedia.mockReturnValueOnce({
+      matches: true,
+      media: '(max-width: 640px)',
+      onchange: null,
+      addEventListener: vi.fn(),
+      removeEventListener: vi.fn(),
+      addListener: vi.fn(),
+      removeListener: vi.fn(),
+      dispatchEvent: vi.fn(),
+    })
+
+    await user.click(
+      screen.getByRole('button', { name: 'Abrir navegação' }),
+    )
+    const navigation = screen.getByRole('navigation', {
+      name: 'Navegação principal',
+    })
+    await user.click(within(navigation).getByRole('button', { name: 'Reservar' }))
+    const mobileToggle = screen.getByRole('button', {
+      name: 'Abrir navegação',
+    })
+    const dialog = screen.getByRole('dialog', { name: 'Reserva demonstrativa' })
+
+    await user.click(
+      within(dialog).getByRole('button', { name: 'Fechar reserva' }),
+    )
+
+    await waitFor(() => expect(mobileToggle).toHaveFocus())
+  })
 })
