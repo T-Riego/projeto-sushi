@@ -233,6 +233,15 @@ describe('flowValidation', () => {
     ).toEqual({})
   })
 
+  it('rejeita um horário que não pertence ao expediente da data escolhida', () => {
+    expect(
+      validateReservation(
+        validReservationDraft({ date: '2026-11-24', time: '12:00' }),
+        '2026-11-22',
+      ),
+    ).toHaveProperty('time')
+  })
+
   it('rejeita pessoas, data, horário e contato inválidos', () => {
     expect(
       validateReservation(

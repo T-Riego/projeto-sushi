@@ -188,7 +188,10 @@ export function validateReservation(
     }
   }
 
-  if (!draft.time.trim()) {
+  if (
+    !draft.time.trim() ||
+    !getReservationTimes(draft.date).includes(draft.time)
+  ) {
     errors.time = 'Escolha um horário para a reserva.'
   }
 
