@@ -461,7 +461,8 @@ describe('CheckoutDemo', () => {
         (className) =>
           className.startsWith('flow-') ||
           className.startsWith('checkout-') ||
-          className.startsWith('demo-'),
+          className.startsWith('demo-') ||
+          className.startsWith('cart-'),
       ),
     ).toBe(true)
     expect(flowCss).toMatch(

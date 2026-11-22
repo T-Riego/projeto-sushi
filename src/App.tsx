@@ -1,46 +1,249 @@
-import { useEffect, useRef, useState } from 'react';
-import { ArrowUpRight, Plus, Minus, ShoppingBag, X, Menu, MoveUpRight, Leaf, Check, Copy } from 'lucide-react';
-import { HeroShowcase } from './components/hero/HeroShowcase';
-import type { MenuItemId } from './types/menu';
-const assetPath=(path:string)=>`${import.meta.env.BASE_URL}${path.replace(/^\/+/, '')}`;
-const dishes = [
-  {id:'box-signature',name:'Box Signature',category:'Combinados',detail:'Uramakis, makis, tamagos e niguiris de camarão.',pieces:18,price:128,tag:'Seu ritual, completo',image:0,photo:assetPath('assets/menu/signature.webp'),alt:'Combinado de niguiris e rolls em prato branco'},
-  {id:'garden-box',name:'Garden Box',category:'Vegetarianos',detail:'Uramakis de abacate, pepino e manga para dividir.',pieces:12,price:84,tag:'Leve por natureza',image:1,photo:assetPath('assets/menu/garden.webp'),alt:'Rolls de vegetais em um prato branco com hashis'},
-  {id:'salmao-box',name:'Salmão Box',category:'Combinados',detail:'Doze niguiris com cortes de salmão e cebolinha.',pieces:12,price:98,tag:'O clássico, elevado',image:2,photo:assetPath('assets/menu/salmao-box.webp'),alt:'Niguiris cobertos por fatias de salmão'},
-  {id:'dupla-salmao',name:'Dupla de Salmão',category:'Niguiris',detail:'Nosso niguiri de salmão, em uma pequena pausa.',pieces:2,price:18,tag:'Seu pequeno ritual',image:3,photo:assetPath('assets/menu/dupla-salmao.webp'),alt:'Detalhe de um niguiri de salmão sobre arroz'},
-  {id:'garden-para-dois',name:'Garden para dois',category:'Vegetarianos',detail:'Nossa seleção vegetal em uma porção para dividir.',pieces:16,price:72,tag:'Melhor junto',image:4,photo:assetPath('assets/menu/garden-dois.webp'),alt:'Rolls de vegetais e abacate em uma bandeja'},
-  {id:'experiencia-ayorume',name:'Experiência AYORUME',category:'Combinados',detail:'Uma seleção de salmão, atum e rolls da casa.',pieces:16,price:118,tag:'Um pouco de tudo',image:5,photo:assetPath('assets/menu/experiencia-ayorume.jpg'),alt:'Seleção de sushi servida em uma tábua escura'},
-];
-const money=(value:number)=>new Intl.NumberFormat('pt-BR',{style:'currency',currency:'BRL',maximumFractionDigits:2}).format(value);
-function FallbackArt(){return <img className="fallback-art" src={assetPath('assets/sushi-0.png')} alt="Seleção de sushi AYORUME" width="720" height="600" />}
-export default function App(){
- const [images]=useState<string[]>([0,1,2].map(i=>assetPath(`assets/sushi-${i}.png`))),[category,setCategory]=useState('Todos'),[cartOpen,setCartOpen]=useState(false),[navOpen,setNavOpen]=useState(false),[toast,setToast]=useState(''),[note,setNote]=useState(''),[summary,setSummary]=useState('');
- const [cart,setCart]=useState<Record<number,number>>(()=>{try{const saved=JSON.parse(localStorage.getItem('ayorume-cart-v1')||'{}');return Object.fromEntries(Object.entries(saved).filter(([id,q])=>Number.isInteger(Number(id))&&Number(id)>=0&&Number(id)<dishes.length&&typeof q==='number'&&Number.isInteger(q)&&q>0&&q<=99)) as Record<number,number>;}catch{return {};}});
- const dialog=useRef<HTMLDialogElement>(null);const toastTimer=useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
- const count=Object.values(cart).reduce((sum,q)=>sum+q,0),total=Object.entries(cart).reduce((sum,[id,q])=>sum+dishes[+id].price*q,0);
- const notify=(message:string)=>{setToast(message);clearTimeout(toastTimer.current);toastTimer.current=setTimeout(()=>setToast(''),3000);};
- const add=(id:number)=>{setCart(c=>({...c,[id]:Math.min((c[id]||0)+1,99)}));setSummary('');notify(`${dishes[id].name} adicionado à sacola`);};
- const handleHeroAdd=(productId:MenuItemId)=>{const legacyIndex=dishes.findIndex(dish=>dish.id===productId);if(legacyIndex<0)return;add(legacyIndex);setCartOpen(true);};
- const change=(id:number,delta:number)=>{setCart(c=>{const next={...c,[id]:Math.min((c[id]||0)+delta,99)};if(next[id]<=0)delete next[id];return next;});setSummary('');};
- useEffect(()=>{try{localStorage.setItem('ayorume-cart-v1',JSON.stringify(cart));}catch{/* Cart remains available in memory. */}},[cart]);
- useEffect(()=>{const d=dialog.current;if(cartOpen&&!d?.open)d?.showModal();else if(!cartOpen&&d?.open)d.close();document.body.style.overflow=cartOpen?'hidden':'';return()=>{document.body.style.overflow='';};},[cartOpen]);
- useEffect(()=>()=>clearTimeout(toastTimer.current),[]);
- const prepare=async()=>{const text=`PEDIDO AYORUME — DEMONSTRAÇÃO\n\n${Object.entries(cart).map(([id,q])=>`${q}x ${dishes[+id].name} (${dishes[+id].pieces} peças) — ${money(dishes[+id].price*q)}`).join('\n')}\n\nTotal dos itens: ${money(total)}${note?`\nObservações: ${note}`:''}\n\nEste é um resumo de demonstração. Nenhum pedido foi enviado.`;setSummary(text);try{await navigator.clipboard.writeText(text);notify('Resumo copiado. Nenhum pedido foi enviado.');}catch{notify('Resumo pronto. Selecione o texto para copiar.');}};
- return <>
-  <header className="site-header wrap">
-   <a className="logo" href="#" aria-label="AYORUME, início">ayorume</a>
-   <nav className={navOpen?'main-nav is-open':'main-nav'} aria-label="Navegação principal"><a href="#menu" onClick={()=>setNavOpen(false)}>O menu <ArrowUpRight size={13}/></a><a href="#filosofia" onClick={()=>setNavOpen(false)}>O nosso ritual</a><a href="#experiencia" onClick={()=>setNavOpen(false)}>A experiência</a></nav>
-   <div className="header-actions"><button className="bag-button" onClick={()=>setCartOpen(true)} aria-label={`Abrir sacola, ${count} itens`}><ShoppingBag size={19}/><span className="bag-count">{count.toString().padStart(2,'0')}</span></button><a href="#menu" className="button button-small">Fazer pedido <ArrowUpRight size={16}/></a><button className="mobile-toggle" aria-label={navOpen?'Fechar navegação':'Abrir navegação'} aria-expanded={navOpen} onClick={()=>setNavOpen(!navOpen)}>{navOpen?<X/>:<Menu/>}</button></div>
-  </header>
-  <main>
-   <HeroShowcase onAddProduct={handleHeroAdd} />
-   <div className="ritual-strip" aria-hidden="true"><span>CORTE PRECISO</span><span className="strip-flower">✳</span><span>SABOR QUE FICA</span><span className="strip-flower">✳</span><span>FEITO NO SEU TEMPO</span><span className="strip-flower">✳</span><span>ESSÊNCIA JAPONESA</span><span className="strip-flower">✳</span><span>SEM PRESSA. COM ALMA.</span></div>
-   <section id="menu" className="menu-section wrap" aria-labelledby="menu-title"><div className="section-heading"><div><div className="eyebrow">01 — ENCONTRE O SEU FAVORITO</div><h2 id="menu-title">A cada escolha,<br/>uma nova <em>descoberta.</em></h2></div><p>Dos clássicos que abraçam aos encontros<br className="desktop-break"/> que surpreendem. Escolha seu momento.</p></div><div className="menu-controls"><div className="category-tabs" role="group" aria-label="Categorias do menu">{['Todos','Niguiris','Combinados','Vegetarianos'].map(c=><button key={c} className={category===c?'active':''} onClick={()=>setCategory(c)} aria-pressed={category===c}>{c==='Vegetarianos'&&<Leaf size={14}/>} {c}</button>)}</div></div><div className="dish-grid">{dishes.map((d,i)=>(category==='Todos'||category===d.category)&&<article className="dish-card" key={d.name}><div className={`dish-image dish-tone-${d.image}`}><span className="dish-category">{d.category}</span><img className="menu-photo" src={d.photo} alt={d.alt} width="960" height="720" loading="lazy" decoding="async"/><span className="piece-tag">{d.pieces} peças</span><button className="quick-add" onClick={()=>add(i)} aria-label={`Adicionar ${d.name} à sacola`}><Plus size={20}/></button></div><div className="dish-info"><h3>{d.name}</h3><span>{money(d.price)}</span></div><p>{d.detail}</p></article>)}</div></section>
-   <section id="filosofia" className="philosophy"><div className="philosophy-inner wrap"><div className="philosophy-art"><span className="philosophy-monogram" aria-hidden="true">A</span><div className="art-circle"/>{images[2]?<img src={images[2]} alt="Seleção de sushi AYORUME, vista em perspectiva" width="720" height="600" loading="lazy"/>:<FallbackArt/>}<span className="art-note">FEITO COM ALMA<br/><small>DE CORAÇÃO, PARA A MESA.</small></span></div><div className="philosophy-copy"><div className="eyebrow">02 — O NOSSO RITUAL</div><h2>O essencial<br/>se sente.<br/><em>Não se explica.</em></h2><p>Na AYORUME, imaginamos a mesa como um ponto de encontro. Entre o cuidado japonês e a liberdade de criar. Entre quem prepara e quem prova.</p><p>Um bom sushi pede presença. Por isso, nosso convite é simples: escolha seu prato, encontre sua companhia e aproveite cada pedaço.</p><a className="light-link" href="#menu">Encontre o seu ritual <ArrowUpRight size={19}/></a></div></div></section>
-   <section id="experiencia" className="experience wrap"><div><div className="eyebrow">03 — RESERVE UM MOMENTO PARA O SABOR</div><h2>Sua próxima pausa<br/>merece <em>AYORUME.</em></h2></div><a href="#menu" className="button">Vamos escolher? <MoveUpRight size={22}/></a><span className="experience-mark" aria-hidden="true">À MESA.</span></section>
-  </main>
-  <footer className="site-footer wrap"><a href="#" className="logo" aria-label="AYORUME, voltar ao início">ayorume</a><span>Pequenos rituais. Grandes sabores.</span><a href="#menu">O menu <ArrowUpRight size={14}/></a><a href={assetPath('creditos-fotograficos.html')}>Créditos das fotos</a><small>Projeto conceito · Restaurante e menu ilustrativos</small></footer>
-  <dialog ref={dialog} className="cart-dialog" onCancel={()=>setCartOpen(false)} onClick={e=>{if(e.target===dialog.current)setCartOpen(false);}} aria-labelledby="cart-title"><div className="cart-panel"><div className="cart-header"><div><div className="eyebrow">SEU MOMENTO AYORUME</div><h2 id="cart-title">Sua sacola <span>({count})</span></h2></div><button className="icon-button" onClick={()=>setCartOpen(false)} aria-label="Fechar sacola"><X/></button></div>{count===0?<div className="empty-cart"><ShoppingBag size={44} strokeWidth={1}/><h3>Uma boa escolha começa aqui.</h3><p>Seu próximo favorito está no menu.</p><button className="button" onClick={()=>{setCartOpen(false);document.getElementById('menu')?.scrollIntoView({behavior:'smooth'});}}>Explorar o menu <ArrowUpRight size={18}/></button></div>:<><div className="cart-items">{Object.entries(cart).map(([id,q])=><div className="cart-item" key={id}><img src={dishes[+id].photo} alt=""/><div><h3>{dishes[+id].name}</h3><p>{dishes[+id].pieces} peças · {money(dishes[+id].price)}</p><div className="quantity-control"><button onClick={()=>change(+id,-1)} aria-label={`Diminuir ${dishes[+id].name}`}><Minus size={14}/></button><span>{q}</span><button disabled={q===99} onClick={()=>change(+id,1)} aria-label={`Aumentar ${dishes[+id].name}`}><Plus size={14}/></button></div></div><strong>{money(dishes[+id].price*q)}</strong></div>)}<label className="notes-label" htmlFor="order-note">Alguma observação?</label><textarea id="order-note" value={note} maxLength={400} placeholder="Conte como você prefere seu pedido…" onChange={e=>{setNote(e.target.value);setSummary('');}}/>{summary&&<label className="order-summary">Resumo do pedido<textarea readOnly value={summary} onFocus={e=>e.target.select()} rows={7}/></label>}</div><div className="cart-total"><div><span>Total dos itens</span><strong>{money(total)}</strong></div><p>Pedido de demonstração. Entrega, pagamento e envio ao restaurante ainda não estão conectados.</p><button className="button" onClick={prepare}>{summary?<><Check size={18}/> Copiar resumo novamente</>:<>Copiar resumo do pedido <Copy size={17}/></>}</button><button className="continue-button" onClick={()=>setCartOpen(false)}>Continuar escolhendo</button></div></>}</div></dialog>
-  <div className={`toast ${toast?'visible':''}`} role="status" aria-live="polite">{toast&&<><Check size={16}/>{toast}</>}</div>
- </>;
+import { useEffect, useRef, useState } from 'react'
+import {
+  ArrowUpRight,
+  Check,
+  Menu,
+  MoveUpRight,
+  ShoppingBag,
+  X,
+} from 'lucide-react'
+
+import { CartDrawer } from './components/cart/CartDrawer'
+import { HeroShowcase } from './components/hero/HeroShowcase'
+import { DigitalMenu } from './components/menu/DigitalMenu'
+import { menuItems } from './data/menu'
+import { useCart } from './hooks/useCart'
+import { useToast } from './hooks/useToast'
+import type { MenuItemId } from './types/menu'
+
+const assetPath = (path: string) =>
+  `${import.meta.env.BASE_URL}${path.replace(/^\/+/, '')}`
+
+function FallbackArt() {
+  return (
+    <img
+      className="fallback-art"
+      src={assetPath('assets/sushi-0.png')}
+      alt="Seleção de sushi AYORUME"
+      width="720"
+      height="600"
+    />
+  )
+}
+
+export default function App() {
+  const [images] = useState<string[]>(
+    [0, 1, 2].map((index) => assetPath(`assets/sushi-${index}.png`)),
+  )
+  const [cartOpen, setCartOpen] = useState(false)
+  const [bagFocusRequest, setBagFocusRequest] = useState(0)
+  const [navOpen, setNavOpen] = useState(false)
+  const bagButtonRef = useRef<HTMLButtonElement>(null)
+  const {
+    lines,
+    count,
+    total,
+    addLine,
+    changeQuantity,
+    removeLine,
+    clearCart,
+  } = useCart()
+  const { message, notify } = useToast()
+
+  const handleHeroAdd = (productId: MenuItemId) => {
+    addLine(productId, [], 1)
+    const product = menuItems.find(({ id }) => id === productId)
+    notify(`${product?.name ?? 'Item'} adicionado à sacola.`)
+    setCartOpen(true)
+  }
+
+  const closeCart = () => {
+    setCartOpen(false)
+    setBagFocusRequest((request) => request + 1)
+  }
+
+  useEffect(() => {
+    if (bagFocusRequest === 0) {
+      return
+    }
+
+    const focusTimer = window.setTimeout(() => {
+      if (!document.querySelector('.checkout-dialog[open]')) {
+        bagButtonRef.current?.focus({ preventScroll: true })
+      }
+    }, 0)
+
+    return () => window.clearTimeout(focusTimer)
+  }, [bagFocusRequest])
+
+  const bagItemLabel = `${count} ${count === 1 ? 'item' : 'itens'}`
+
+  return (
+    <>
+      <header className="site-header wrap">
+        <a className="logo" href="#" aria-label="AYORUME, início">
+          ayorume
+        </a>
+        <nav
+          className={navOpen ? 'main-nav is-open' : 'main-nav'}
+          aria-label="Navegação principal"
+        >
+          <a href="#menu" onClick={() => setNavOpen(false)}>
+            O menu <ArrowUpRight size={13} />
+          </a>
+          <a href="#filosofia" onClick={() => setNavOpen(false)}>
+            O nosso ritual
+          </a>
+          <a href="#experiencia" onClick={() => setNavOpen(false)}>
+            A experiência
+          </a>
+        </nav>
+        <div className="header-actions">
+          <button
+            ref={bagButtonRef}
+            className="bag-button"
+            type="button"
+            aria-label={`Abrir sacola, ${bagItemLabel}`}
+            onClick={() => setCartOpen(true)}
+          >
+            <ShoppingBag size={19} />
+            <span className="bag-count">{count.toString().padStart(2, '0')}</span>
+          </button>
+          <a href="#menu" className="button button-small">
+            Fazer pedido <ArrowUpRight size={16} />
+          </a>
+          <button
+            className="mobile-toggle"
+            type="button"
+            aria-label={navOpen ? 'Fechar navegação' : 'Abrir navegação'}
+            aria-expanded={navOpen}
+            onClick={() => setNavOpen(!navOpen)}
+          >
+            {navOpen ? <X /> : <Menu />}
+          </button>
+        </div>
+      </header>
+
+      <main>
+        <HeroShowcase onAddProduct={handleHeroAdd} />
+
+        <div className="ritual-strip" aria-hidden="true">
+          <span>CORTE PRECISO</span>
+          <span className="strip-flower">✳</span>
+          <span>SABOR QUE FICA</span>
+          <span className="strip-flower">✳</span>
+          <span>FEITO NO SEU TEMPO</span>
+          <span className="strip-flower">✳</span>
+          <span>ESSÊNCIA JAPONESA</span>
+          <span className="strip-flower">✳</span>
+          <span>SEM PRESSA. COM ALMA.</span>
+        </div>
+
+        <DigitalMenu onAddLine={addLine} onNotify={notify} />
+
+        <section id="filosofia" className="philosophy">
+          <div className="philosophy-inner wrap">
+            <div className="philosophy-art">
+              <span className="philosophy-monogram" aria-hidden="true">
+                A
+              </span>
+              <div className="art-circle" />
+              {images[2] ? (
+                <img
+                  src={images[2]}
+                  alt="Seleção de sushi AYORUME, vista em perspectiva"
+                  width="720"
+                  height="600"
+                  loading="lazy"
+                />
+              ) : (
+                <FallbackArt />
+              )}
+              <span className="art-note">
+                FEITO COM ALMA
+                <br />
+                <small>DE CORAÇÃO, PARA A MESA.</small>
+              </span>
+            </div>
+            <div className="philosophy-copy">
+              <div className="eyebrow">02 — O NOSSO RITUAL</div>
+              <h2>
+                O essencial
+                <br />
+                se sente.
+                <br />
+                <em>Não se explica.</em>
+              </h2>
+              <p>
+                Na AYORUME, imaginamos a mesa como um ponto de encontro. Entre o
+                cuidado japonês e a liberdade de criar. Entre quem prepara e quem
+                prova.
+              </p>
+              <p>
+                Um bom sushi pede presença. Por isso, nosso convite é simples:
+                escolha seu prato, encontre sua companhia e aproveite cada pedaço.
+              </p>
+              <a className="light-link" href="#menu">
+                Encontre o seu ritual <ArrowUpRight size={19} />
+              </a>
+            </div>
+          </div>
+        </section>
+
+        <section id="experiencia" className="experience wrap">
+          <div>
+            <div className="eyebrow">03 — RESERVE UM MOMENTO PARA O SABOR</div>
+            <h2>
+              Sua próxima pausa
+              <br />
+              merece <em>AYORUME.</em>
+            </h2>
+          </div>
+          <a href="#menu" className="button">
+            Vamos escolher? <MoveUpRight size={22} />
+          </a>
+          <span className="experience-mark" aria-hidden="true">
+            À MESA.
+          </span>
+        </section>
+      </main>
+
+      <footer className="site-footer wrap">
+        <a href="#" className="logo" aria-label="AYORUME, voltar ao início">
+          ayorume
+        </a>
+        <span>Pequenos rituais. Grandes sabores.</span>
+        <a href="#menu">
+          O menu <ArrowUpRight size={14} />
+        </a>
+        <a href={assetPath('creditos-fotograficos.html')}>Créditos das fotos</a>
+        <small>Projeto conceito · Restaurante e menu ilustrativos</small>
+      </footer>
+
+      <CartDrawer
+        open={cartOpen}
+        lines={lines}
+        count={count}
+        total={total}
+        onClose={closeCart}
+        onChangeQuantity={changeQuantity}
+        onRemoveLine={removeLine}
+        onClearCart={clearCart}
+        onNotify={notify}
+      />
+
+      <div
+        className={`toast ${message ? 'visible' : ''}`}
+        role="status"
+        aria-live="polite"
+      >
+        {message ? (
+          <>
+            <Check size={16} />
+            {message}
+          </>
+        ) : null}
+      </div>
+    </>
+  )
 }
